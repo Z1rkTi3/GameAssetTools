@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "id": "scout_mech",
+  "display_name": "Compact Scout Mech",
+  "category": "mechs",
+  "recipe_version": 1,
+  "supported_stages": ["BLOCKOUT", "REFINE", "DETAIL", "FINALIZE"]
+}

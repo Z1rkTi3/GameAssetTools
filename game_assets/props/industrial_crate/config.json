@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "asset": "industrial_crate",
+  "parameters": {
+    "dimensions": {"width": 1.8, "depth": 1.25, "height": 1.25},
+    "frame": {"thickness": 0.12},
+    "lid": {"thickness": 0.14},
+    "finish": {"bevel": 0.025, "material": "Painted_Metal"},
+    "details": {"handles": true}
+  },
+  "style": {}
+}

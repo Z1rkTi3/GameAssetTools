@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "game-asset-tools"
+dynamic = ["version"]
+description = "Shared Blender asset production Core, recipes, CLI and add-on"
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.11"
+dependencies = []
+
+[project.urls]
+Repository = "https://github.com/Z1rkTi3/GameAssetTools"
+Issues = "https://github.com/Z1rkTi3/GameAssetTools/issues"
+
+[project.scripts]
+gat = "game_asset_tools.cli:main"
+
+[tool.setuptools.dynamic]
+version = {attr = "game_asset_tools.__version__"}
+
+[tool.setuptools.packages.find]
+include = ["game_asset_tools*"]

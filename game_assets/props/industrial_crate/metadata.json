@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "id": "industrial_crate",
+  "display_name": "Industrial Cargo Crate",
+  "category": "props",
+  "recipe_version": 1,
+  "supported_stages": ["BLOCKOUT", "REFINE", "DETAIL", "FINALIZE"]
+}

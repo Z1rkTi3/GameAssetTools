@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "asset": "scout_mech",
+  "parameters": {
+    "body": {"width": 1.6, "depth": 1.2},
+    "legs": {"length": 2.0, "stance": 1.25},
+    "cockpit": {"scale": 1.0},
+    "weapons": {"left_scale": 0.8, "right_scale": 1.0},
+    "finish": {"bevel": 0.06}
+  },
+  "style": {}
+}

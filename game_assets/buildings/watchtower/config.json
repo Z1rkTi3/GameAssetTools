@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "asset": "watchtower",
+  "parameters": {
+    "dimensions": {"width": 3.8, "depth": 3.2, "floors": 3, "floor_height": 2.4},
+    "windows": {"width": 0.7, "height": 1.1, "per_side": 2},
+    "roof": {"overhang": 0.3},
+    "finish": {"bevel": 0.04}
+  },
+  "style": {}
+}

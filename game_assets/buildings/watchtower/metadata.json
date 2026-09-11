@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "id": "watchtower",
+  "display_name": "Modular Watchtower",
+  "category": "buildings",
+  "recipe_version": 1,
+  "supported_stages": ["BLOCKOUT", "REFINE", "DETAIL", "FINALIZE"]
+}

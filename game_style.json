@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "units": "meters",
+  "unit_scale": 1.0,
+  "style": "low_poly",
+  "shading": "flat_or_simple",
+  "silhouette_priority": "high",
+  "small_detail_density": "low",
+  "symmetry_preference": true,
+  "bevel": {"width": 0.04, "segments": 1},
+  "default_texture_resolution": 512,
+  "target_engine": "Godot",
+  "default_export_format": "glb",
+  "preview": {"resolution": 512, "background": [0.055, 0.065, 0.085], "margin": 1.18},
+  "materials": {
+    "Stone": {"base_color": [0.40, 0.43, 0.47, 1.0], "roughness": 0.85},
+    "Metal_Silver": {"base_color": [0.58, 0.64, 0.72, 1.0], "metallic": 0.8, "roughness": 0.3},
+    "Metal_Bronze": {"base_color": [0.42, 0.22, 0.08, 1.0], "metallic": 0.75, "roughness": 0.35},
+    "Glass_Clear": {"base_color": [0.16, 0.38, 0.48, 1.0], "roughness": 0.12, "transmission": 0.5},
+    "Ruby": {"base_color": [0.55, 0.015, 0.05, 1.0], "roughness": 0.22},
+    "Rubber": {"base_color": [0.025, 0.03, 0.04, 1.0], "roughness": 0.92},
+    "Painted_Metal": {"base_color": [0.14, 0.29, 0.33, 1.0], "metallic": 0.35, "roughness": 0.48}
+  }
+}
