@@ -1,0 +1,22 @@
+{
+  "name": "game-asset-tools",
+  "version": "0.4.0",
+  "description": "Build Blender game assets and toon sprite atlases with settings shared by Blender UI and Codex.",
+  "author": {
+    "name": "GameAssetTools contributors"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/Z1rkTi3/GameAssetTools",
+  "keywords": ["blender", "game-assets", "3d", "blockout", "recipes", "sprites", "toon"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "GameAssetTools",
+    "shortDescription": "Create and edit game assets in Blender.",
+    "longDescription": "A portable local workflow for blockouts, selective rebuilds, material variants, validation, GLB and toon sprite atlases. Sprite settings are shared with the manual Blender UI. Includes the same Core and recipes, including Rubin Tower. Requires local Blender; no external service account or API key.",
+    "developerName": "GameAssetTools contributors",
+    "category": "Productivity",
+    "capabilities": ["Write"],
+    "brandColor": "#C51D45",
+    "defaultPrompt": ["Create a Blender blockout from my reference.", "Export Rubin Tower as toon sprites using its shared settings.", "Validate and export my game asset to GLB."]
+  }
+}

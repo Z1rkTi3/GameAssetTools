@@ -5,7 +5,7 @@ import sys
 
 # Blender discovers this literal without importing; packaging checks its version.
 bl_info = {
-    "name": "GameAssetTools", "author": "GameAssetTools contributors", "version": (0, 1, 0),
+    "name": "GameAssetTools", "author": "GameAssetTools contributors", "version": (0, 4, 0),
     "blender": (4, 2, 0), "location": "View3D > Sidebar > GameAssetTools",
     "description": "Discover, build, inspect, preview, validate and export game asset recipes",
     "category": "Object",
@@ -17,9 +17,9 @@ _source = _here / "bundled" if (_here / "bundled" / "game_asset_tools").is_dir()
 if str(_source) not in sys.path:
     sys.path.insert(0, str(_source))
 
-from . import operators, panels, properties
+from . import i18n, operators, panels, properties
 
-_CLASSES = (*properties.CLASSES, *operators.CLASSES, *panels.CLASSES)
+_CLASSES = (*i18n.CLASSES, *properties.CLASSES, *operators.CLASSES, *panels.CLASSES)
 
 
 def register():
@@ -27,10 +27,12 @@ def register():
     for cls in _CLASSES:
         bpy.utils.register_class(cls)
     bpy.types.Scene.game_asset_tools = bpy.props.PointerProperty(type=properties.GAT_Settings)
+    properties.register_handlers()
 
 
 def unregister():
     import bpy
+    properties.unregister_handlers()
     if hasattr(bpy.types.Scene, "game_asset_tools"):
         del bpy.types.Scene.game_asset_tools
     for cls in reversed(_CLASSES):

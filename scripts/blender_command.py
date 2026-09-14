@@ -24,13 +24,23 @@ def main():
         from game_asset_tools.export import save_asset
         from game_asset_tools.export.paths import artifact_path, prepare_path
         action = request["action"]
-        mutating = action in {"build","rebuild","status","delete"} and not request.get("dry_run")
-        if action == "rebuild" and mutating:
+        if action == "batch":
+            from game_asset_tools.batch import run_batch
+            result = run_batch(request)
+            response_path.write_text(json.dumps(result,indent=2,allow_nan=False),encoding="utf-8")
+            if result.get("status") in {"failed", "blocked", "error"}:
+                raise SystemExit(1)
+            return
+        mutating = action in {"build","rebuild","recolor","status","delete"} and not request.get("dry_run")
+        if action in {"rebuild", "recolor"} and mutating:
             plan = execute({**request,"dry_run":True})
             if not plan.get("components") and not plan.get("errors"):
                 mutating = False
         if mutating:
-            prepare_path(artifact_path(request["output"],"blend",request["asset"],".blend"),overwrite=request.get("overwrite",False))
+            destination = artifact_path(request["output"],"blend",request["asset"],".blend")
+            if action == "recolor" and destination.resolve() == Path(request["blend"]).resolve():
+                raise ValueError("Recolor saves a separate version; choose a different --output directory")
+            prepare_path(destination,overwrite=request.get("overwrite",False))
         if not request.get("blend"):
             # This is a fresh --factory-startup process, never a user's open scene.
             for obj in list(bpy.context.scene.objects):
@@ -40,7 +50,7 @@ def main():
         result = execute(request)
         if mutating and result.get("status") not in {"blocked", "unchanged"}:
             result.update(save_asset(request["asset"],request["output"],overwrite=request.get("overwrite",False)))
-            result["status"] = {"build":"built","rebuild":"rebuilt","status":request.get("state"),"delete":"deleted"}[action]
+            result["status"] = {"build":"built","rebuild":"rebuilt","recolor":"recolored","status":request.get("state"),"delete":"deleted"}[action]
         response_path.write_text(json.dumps(result,indent=2,allow_nan=False),encoding="utf-8")
         if result.get("status") in {"error","blocked"}:
             raise SystemExit(1)

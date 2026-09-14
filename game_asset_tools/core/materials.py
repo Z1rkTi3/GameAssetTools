@@ -113,7 +113,9 @@ def project_material(name: str, style: Mapping | None = None) -> bpy.types.Mater
     overrides = (style or {}).get("materials", {}).get(role)
     if defaults is None and overrides is None:
         raise ValueError(f"Unknown project material {name!r}")
-    return get_material(role, **{**(defaults or {}), **(overrides or {})})
+    material = get_material(role, **{**(defaults or {}), **(overrides or {})})
+    material["gat_material_role"] = role
+    return material
 
 
 def assign_material(obj: bpy.types.Object, material: bpy.types.Material,

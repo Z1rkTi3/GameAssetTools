@@ -20,8 +20,9 @@ archive=args.zip.expanduser().resolve()
 if not archive.is_file():
     parser.error(f"ZIP does not exist: {archive}. Run scripts/package_addon.py first.")
 
-script='''import bpy, addon_utils, sys
+script='''import bpy, addon_utils, os, sys
 from pathlib import Path
+assert Path(bpy.utils.user_resource("CONFIG")).resolve() == Path(os.environ["BLENDER_USER_CONFIG"]).resolve()
 archive = sys.argv[sys.argv.index("--") + 1]
 assert bpy.ops.preferences.addon_install(filepath=archive, overwrite=True) == {"FINISHED"}
 bpy.utils.refresh_script_paths()
@@ -40,6 +41,8 @@ print("GAT_INSTALL_ENABLE_DISABLE_OK")
 '''
 with tempfile.TemporaryDirectory(prefix="gat_install_") as directory:
     root=Path(directory)
+    (root/"scripts").mkdir()
+    (root/"config").mkdir()
     runner=root/"check.py"
     runner.write_text(script,encoding="utf-8")
     env={**os.environ,"BLENDER_USER_SCRIPTS":str(root/"scripts"),"BLENDER_USER_CONFIG":str(root/"config")}

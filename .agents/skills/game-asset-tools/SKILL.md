@@ -24,6 +24,13 @@ do not unlock them just to make a command pass. Numerical questions use structur
 inspection; visual questions use a component preview and relevant reference crop.
 
 Keep context small: registry metadata → chosen config/recipe → specific helper/docs.
+For material-only changes use `recolor --materials <roles.json>` with a dry-run and
+a separate output version (`docs/materials.md`). Inspect roles and swatches first.
+For multiple variants use one `batch --batch-config <manifest.json>` call and its
+common-frame comparison sheet (`docs/batch_variants.md`). Repeat validation with
+`--report-mode stdout|unique|replace`; a viewing copy uses `save --view-copy`.
+Avoid desktop automation solely for zooming or repeated screenshots; use saved
+previews and numerical inspection. Reuse already-read instructions and test evidence.
 Do not reload every module, render all six views for a local fix, or rebuild unchanged
 assets. Use ordinary low reasoning for numerical edits, transforms, rebuilds, previews,
 and export; medium for new construction/reference interpretation; higher effort for
@@ -41,8 +48,17 @@ Read only the workflow relevant to the request:
 - `codex/workflows/validate_asset.md`: validation and repair.
 - `codex/workflows/export_asset.md`: save/GLB delivery.
 - `codex/workflows/extend_core.md`: reusable Core changes.
+- `docs/sprites.md`: shared sprite profiles, toon/standard PNG frames and atlases.
+
+For sprite export, read `sprite-settings ASSET --schema`, update only requested
+fields with `sprite-settings --set KEY=JSON --expected-revision HASH`, then use
+`sprites ASSET --blend PATH --preview` before the full `sprites` export. Blender UI
+edits the same asset-local config profile; do not create a separate Codex preset
+or replace geometry/materials to change sprite appearance. Settings need no Blender
+process. Preserve source .blend work and use explicit artifact overwrite only as
+authorized. Current sprite export is static; do not claim animation generation.
 
 Report artifact paths and actual validation results. Preview renders are blockout
 engineering evidence; do not claim final reference accuracy or Godot import testing
 without actually inspecting/testing those results. Optional paid services, collision,
-LOD, rigging, and sprite generation are outside version 0.1's implemented workflow.
+LOD, rigging and animated sprite generation remain outside the implemented workflow.

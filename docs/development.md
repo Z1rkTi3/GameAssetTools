@@ -1,8 +1,8 @@
 # Development and release checks
 
 Use an editable checkout as described in the README. Runtime dependencies remain
-Python standard library plus Blender. The standalone product is the Blender add-on
-ZIP; the CLI uses resources from the complete checkout.
+Python standard library plus Blender. The Blender and Codex ZIPs bundle the same
+Core; the CLI can use the complete checkout or the Codex package's runtime.
 
 ## Adding an asset
 
@@ -19,7 +19,7 @@ Examples in `game_assets/` exercise the framework and do not define its categori
 ## Automated checks
 
 GitHub Actions runs Python-only tests on Windows/Linux and Python 3.11/3.12. It also
-checks CLI imports/registry, compiles sources, and builds the ZIP. Blender integration
+checks CLI imports/registry, compiles sources, and builds both ZIPs. Blender integration
 is currently local, so the CI workflow does not depend on Blender being installed.
 
 From the project root, with actual Python and Blender executables on PATH:
@@ -29,9 +29,19 @@ python -m unittest discover -s tests -p "test_*.py"
 blender --background --factory-startup --python-exit-code 1 --python tests/blender_geometry.py
 blender --background --factory-startup --python-exit-code 1 --python tests/run_blender_tests.py
 blender --background --factory-startup --python-exit-code 1 --python tests/blender_addon_test.py
+blender --background --factory-startup --python-exit-code 1 --python tests/blender_ui_polish_test.py
+blender --background --factory-startup --python-exit-code 1 --python tests/blender_i18n_test.py
+blender --background --factory-startup --python-exit-code 1 --python tests/blender_recolor_test.py
+blender --background --factory-startup --python-exit-code 1 --python tests/blender_material_inspection_test.py
+blender --background --factory-startup --python-exit-code 1 --python tests/blender_batch_test.py
+blender --background --factory-startup --python-exit-code 1 --python tests/blender_view_copy_test.py
+blender --background --factory-startup --python-exit-code 1 --python tests/blender_sprites_test.py
+blender --background --factory-startup --python-exit-code 1 --python tests/blender_sprite_ui_test.py
+blender --background --factory-startup --python-exit-code 1 --python tests/blender_sprite_roundtrip_test.py
 blender --background --factory-startup --python-exit-code 1 --python tests/check_packaged_addon.py
 python tests/run_cli_smoke.py
 python tests/run_install_smoke.py
+python tests/run_installer_persistence_smoke.py
 ```
 
 Run Blender scripts in disposable headless processes: they reset their test scenes.
@@ -44,19 +54,26 @@ An optional external Skill Creator validator is not required for development or 
 ## Preparing a release
 
 `game_asset_tools.__version__` is the canonical version for package metadata, CLI,
-and ZIP naming. Blender needs a literal `bl_info` tuple for discovery; the builder
-and tests reject a mismatch. Update version references in README/changelog/docs
+and ZIP naming. Blender needs a literal `bl_info` tuple and Codex a manifest version;
+both builders and tests reject a mismatch. Update README/changelog/docs
 together. Recipe/config schema versions are separate from the product version.
 
 Run the checks above, update [verification results](verification.md), then build:
 
 ```sh
 python scripts/package_addon.py --overwrite
+python scripts/package_codex_plugin.py --overwrite
+python tests/run_release_candidate_smoke.py --addon-zip output/game_asset_tools_blender_0.4.0.zip --codex-zip output/game_asset_tools_codex_0.4.0.zip --blender blender --output output/release_candidate_0_4
 ```
 
-The current filename is `output/game_asset_tools_blender_0.1.0.zip`. Inspect its
-members and test installation from the ZIP. Commit source/docs/tests only. Publish
-an annotated `v<version>` tag and attach the ZIP to its GitHub Release; do not commit
+The candidate test checks archive/source equality, isolated imports, real CLI and
+Blender builds/previews and shared profile round trips. It redirects both OS home
+and Blender/Codex directories, asserts that they are temporary before preference
+writes, and never uses the existing personal marketplace. Use a new output path
+for each run. Do not run ZIP-building suites concurrently.
+
+Inspect package members and test installation from the ZIPs. Commit source/docs/tests
+only. Publish an annotated `v<version>` tag and attach both ZIPs to its GitHub Release; do not commit
 release archives, sample renders, or generated assets. Include test results and
 known limitations in release notes. Git operations require explicit user intent.
 

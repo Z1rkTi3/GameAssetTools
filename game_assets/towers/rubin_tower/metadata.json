@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "id": "rubin_tower",
+  "display_name": "Rubin Tower",
+  "category": "towers",
+  "recipe_version": 2,
+  "supported_stages": [
+    "BLOCKOUT"
+  ]
+}

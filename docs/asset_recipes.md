@@ -14,6 +14,10 @@ reference controls silhouette, proportions, placement, and major features.
 Metadata schema 1 requires `id` (lower_case), display name, category (free-form),
 positive integer `recipe_version`, and supported uppercase stages. Config schema 1
 contains `asset`, `parameters` (nested JSON), and optional `style` overrides.
+An optional `appearance` mapping stores component/object/slot material overrides;
+see `docs/materials.md`. Give independently colored parts distinct palette roles.
+The optional `sprites` section stores the shared Blender/Codex sprite profile;
+see `docs/sprites.md`. Sprite settings do not change geometry or rebuild scope.
 Unknown parameter paths, wrong types, nonfinite values, and out-of-range numbers
 are rejected before mutation. Defaults → optional config overlay → dotted CLI
 overrides are merged. Rebuild begins with the saved successful config.

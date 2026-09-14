@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import re
 import tempfile
+from uuid import uuid4
 
 
 def artifact_path(output, kind, asset_id, suffix):
@@ -30,3 +31,33 @@ def write_json(path, data, *, overwrite=False):
         json.dump(data, stream, indent=2, allow_nan=False)
         stream.write("\n")
     return str(path)
+
+
+REPORT_MODES = ("file", "stdout", "unique", "replace")
+
+
+def write_validation_report(asset_id, output, report, *, mode="file", overwrite=False):
+    """Return a report, optionally writing only a validation JSON artifact.
+
+    ``stdout`` leaves output handling to the caller. ``unique`` exclusively creates
+    a UUID-suffixed report. ``replace`` replaces the canonical report without
+    granting overwrite permission to any .blend, preview, or export operation.
+    ``file`` preserves the original explicit-overwrite contract.
+    """
+    if mode not in REPORT_MODES:
+        raise ValueError(f"Unknown validation report mode {mode!r}; choose {REPORT_MODES}")
+    result = dict(report)
+    if mode == "stdout":
+        return result
+    path = artifact_path(output, "reports", asset_id, "_validation.json")
+    if mode == "unique":
+        for _ in range(10):
+            candidate = path.with_name(f"{asset_id}_validation_{uuid4().hex}.json")
+            try:
+                result["report"] = write_json(candidate, report)
+                return result
+            except FileExistsError:
+                continue
+        raise FileExistsError("Could not allocate an unused validation report filename")
+    result["report"] = write_json(path, report, overwrite=mode == "replace" or overwrite)
+    return result

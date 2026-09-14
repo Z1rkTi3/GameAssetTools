@@ -17,7 +17,7 @@ VIEWS = {"front": (0, -1, 0), "back": (0, 1, 0), "left": (-1, 0, 0),
 
 
 def render_preview(asset_id, output, *, component=None, views=None, resolution=512,
-                   overwrite=False, reframe=False, debug=False):
+                   overwrite=False, reframe=False, debug=False, framing=None):
     """Render six standard views or a targeted subset; return paths and framing."""
     if resolution not in (256, 512, 1024):
         raise ValueError("Preview resolution must be 256, 512, or 1024")
@@ -44,7 +44,7 @@ def render_preview(asset_id, output, *, component=None, views=None, resolution=5
     center = Vector(box["center"])
     radius = max(Vector(box["dimensions"]).length / 2, 0.01)
     reframed = False
-    if frame_path.exists() and not reframe:
+    if framing is None and frame_path.exists() and not reframe:
         frame = json.loads(frame_path.read_text(encoding="utf-8"))
         old_center = Vector(frame["center"])
         old_radius = float(frame["radius"])
@@ -56,6 +56,28 @@ def render_preview(asset_id, output, *, component=None, views=None, resolution=5
     settings = style.get("preview", {})
     margin = max(float(settings.get("margin", 1.15)), 1.05)
     frame = {"center": list(center), "radius": radius, "ortho_scale": radius*2*margin}
+    if framing is not None:
+        # A batch computes this frame from every variant before rendering any of
+        # them. Never silently expand it for just one member of a comparison.
+        try:
+            fixed_center = tuple(float(v) for v in framing["center"])
+            fixed_radius = float(framing["radius"])
+            fixed_scale = float(framing["ortho_scale"])
+            valid = (len(fixed_center) == 3 and fixed_radius > 0
+                     and fixed_scale >= fixed_radius * 2 * 1.05
+                     and all(math.isfinite(v) for v in (*fixed_center, fixed_radius, fixed_scale)))
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ValueError("Invalid explicit preview framing") from exc
+        if not valid:
+            raise ValueError("Invalid explicit preview framing")
+        center, radius = Vector(fixed_center), fixed_radius
+        for x in (box["min"][0], box["max"][0]):
+            for y in (box["min"][1], box["max"][1]):
+                for z in (box["min"][2], box["max"][2]):
+                    if (Vector((x, y, z))-center).length > radius * 1.001:
+                        raise ValueError("Explicit preview framing does not contain the target")
+        margin = fixed_scale / (radius * 2)
+        frame = {"center": list(fixed_center), "radius": radius, "ortho_scale": fixed_scale}
     scene = bpy.data.scenes.new("GAT_Preview")
     created_objects, created_meshes, created_materials, labels = [], [], [], []
     world = None
@@ -76,12 +98,19 @@ def render_preview(asset_id, output, *, component=None, views=None, resolution=5
         scene.world = world
         world.use_nodes = True
         background = settings.get("background", [0.065, 0.075, 0.095, 1])
-        world.node_tree.nodes["Background"].inputs["Color"].default_value = (*background[:3], 1)
-        world.node_tree.nodes["Background"].inputs["Strength"].default_value = .5
+        background_node = next(node for node in world.node_tree.nodes if node.type == "BACKGROUND")
+        background_node.inputs["Color"].default_value = (*background[:3], 1)
+        background_node.inputs["Strength"].default_value = .5
         debug_materials = {}
         for source in sources:
-            mesh = bpy.data.meshes.new_from_object(source.evaluated_get(graph), depsgraph=graph)
+            evaluated = source.evaluated_get(graph)
+            mesh = bpy.data.meshes.new_from_object(evaluated, depsgraph=graph)
             created_meshes.append(mesh)
+            # new_from_object copies mesh-linked materials, not the effective
+            # object-linked overrides used by a material-only recolor.
+            for index, slot in enumerate(evaluated.material_slots):
+                if slot.link == "OBJECT" and index < len(mesh.materials):
+                    mesh.materials[index] = slot.material
             obj = bpy.data.objects.new("Preview_" + source.name, mesh)
             created_objects.append(obj)
             scene.collection.objects.link(obj)

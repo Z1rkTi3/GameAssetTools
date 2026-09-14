@@ -25,10 +25,13 @@ def inspect_glb(path):
             "materials": len(content.get("materials", [])), "node_names": [n.get("name") for n in content["nodes"]]}
 
 
-def save_asset(asset_id, output, *, overwrite=False):
+def save_asset(asset_id, output, *, overwrite=False, view_copy=False, view="perspective"):
     import bpy
     from game_asset_tools.asset.scene import find_root
     find_root(asset_id)
+    if view_copy:
+        from .view_copy import save_view_copy
+        return save_view_copy(asset_id, output, overwrite=overwrite, view=view)
     path = prepare_path(artifact_path(output, "blend", asset_id, ".blend"), overwrite=overwrite)
     result = bpy.ops.wm.save_as_mainfile(filepath=str(path), check_existing=False)
     if "FINISHED" not in result or not path.is_file():

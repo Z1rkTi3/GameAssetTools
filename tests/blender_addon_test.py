@@ -41,6 +41,30 @@ class AddonTests(unittest.TestCase):
         self.assertTrue(hasattr(bpy.ops.game_asset_tools,"action"))
         self.assertGreater(len(self.settings.parameters),0)
 
+    def test_material_plan_apply_and_validation_report_controls(self):
+        self.select("towers", "rubin_tower")
+        bpy.ops.game_asset_tools.action(action="build")
+        root = find_root("rubin_tower")
+        target = asset_objects(root, "Body")[0]
+        source_mesh = target.data
+        source_material = target.active_material
+        self.settings.component = "Body"
+        self.settings.material_role = "Rubin_Body"
+        self.settings.material_color = (0.03, 0.08, 0.6, 1)
+        self.assertEqual(bpy.ops.game_asset_tools.action(action="recolor", plan_only=True), {"FINISHED"})
+        self.assertEqual(target.active_material, source_material)
+        report = json.loads(bpy.data.texts[self.settings.report_text].as_string())
+        self.assertEqual(report["objects"], [target.name])
+        self.assertEqual(bpy.ops.game_asset_tools.action(action="recolor"), {"FINISHED"})
+        self.assertEqual(target.data, source_mesh)
+        self.assertNotEqual(target.active_material, source_material)
+        self.settings.overwrite = False
+        self.settings.report_mode = "stdout"
+        for _ in range(2):
+            self.assertEqual(bpy.ops.game_asset_tools.action(action="validate"), {"FINISHED"})
+            report = json.loads(bpy.data.texts[self.settings.report_text].as_string())
+            self.assertNotIn("report", report)
+
     def test_build_change_parameter_inspect_status_validate_export(self):
         self.select("mechs","scout_mech")
         self.assertEqual(bpy.ops.game_asset_tools.action(action="build"),{"FINISHED"})

@@ -4,6 +4,7 @@ import bpy
 from mathutils import Vector
 
 from game_asset_tools.asset.scene import asset_objects, component_records, find_root
+from .materials import material_role, material_usage
 
 
 def bounds(objects):
@@ -48,7 +49,8 @@ def inspect_asset(asset_id, component=None):
         raise ValueError(f"Unknown component {component!r}")
     objects = asset_objects(root, component)
     result = {"asset": asset_id, "stage": root.get("gat_stage"), "stage_status": root.get("gat_stage_status"),
-              "statistics": statistics(objects), "bounds": bounds(objects)}
+              "statistics": statistics(objects), "bounds": bounds(objects),
+              "material_roles": material_usage(root, objects)}
     if component:
         result.update(component=component, **records[component])
         result["objects"] = [{"name": o.name, "local_name": o.get("gat_local_name"), "type": o.type,

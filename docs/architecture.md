@@ -31,8 +31,14 @@ direct mesh/bmesh data; operator-only tasks restore Blender selection/mode.
 Preview copies evaluated geometry into a temporary scene. Export filters ownership
 and uses one centralized glTF path.
 
-Version 0.1 targets static hard-surface/low-poly assets. Helpers, sockets, hierarchy,
-and stages provide extension points for collision, LOD, rigging, animation, and
-sprite rendering. These future systems and an optional interactive bridge are
-deliberately not implemented. Current GLB export disables animation. No game engine
+Sprite export uses one pure settings schema and the recipe's `config.json: sprites`
+as its authoritative profile. The Blender form is a working copy with an optimistic
+revision check; the CLI reads/writes the same service without launching Blender.
+Both render entry points read that saved profile and call the same isolated sprite
+renderer. The `.blend` build-config snapshot is not a competing sprite profile.
+
+Version 0.3 targets static hard-surface/low-poly assets and static sprite atlases.
+Helpers, sockets, hierarchy and stages provide extension points for collision,
+LOD, rigging and animation. Those future systems and an optional interactive bridge
+are deliberately not implemented. Current GLB export disables animation. No game engine
 project or Godot executable is required for the Blender workflow.

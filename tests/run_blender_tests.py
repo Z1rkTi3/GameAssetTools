@@ -42,12 +42,13 @@ class WorkflowTests(unittest.TestCase):
     def build_mech(self):
         return build(self.entry,self.config,self.style)
 
-    def test_three_assets_build_preview_validate_save_reopen_export(self):
+    def test_all_assets_build_preview_validate_save_reopen_export(self):
         reports=[]
         for entry in self.registry.list():
             bpy.ops.wm.read_factory_settings(use_empty=True)
             config=load_config(entry)
-            result=build(entry,config,self.style)
+            style=load_style(PROJECT,config.get("style",{}))
+            result=build(entry,config,style)
             self.assertGreater(result["objects"],5)
             root=find_root(entry.id)
             report=validate_asset(entry.id,entry)
@@ -134,12 +135,15 @@ class WorkflowTests(unittest.TestCase):
     def test_stage_approval_and_all_stages(self):
         for entry in self.registry.list():
             config=load_config(entry)
-            build(entry,config,self.style)
-            with self.assertRaisesRegex(ValueError,"Approve"):
-                build(entry,config,self.style,rebuild=True,stage="REFINE")
-            for stage in ("REFINE","DETAIL","FINALIZE"):
+            style=load_style(PROJECT,config.get("style",{}))
+            build(entry,config,style)
+            stages=[stage for stage in ("REFINE","DETAIL","FINALIZE") if stage in entry.supported_stages]
+            if stages:
+                with self.assertRaisesRegex(ValueError,"Approve"):
+                    build(entry,config,style,rebuild=True,stage=stages[0])
+            for stage in stages:
                 set_status(entry.id,"approved")
-                result=build(entry,config,self.style,rebuild=True,stage=stage)
+                result=build(entry,config,style,rebuild=True,stage=stage)
                 self.assertEqual(result["stage"],stage)
                 self.assertEqual(validate_asset(entry.id,entry)["errors"],[])
 

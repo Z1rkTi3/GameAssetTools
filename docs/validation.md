@@ -4,6 +4,11 @@
 as JSON, and writes `output/reports/<asset>_validation.json`. Export runs the same
 validator; errors stop export. Warnings remain visible and do not stop it.
 
+The default `--report-mode file` protects that fixed path. Use `stdout` to return
+JSON without a report file, `unique` for a new UUID-named report, or `replace` to
+replace only the validation JSON. These options never permit overwriting blend,
+preview or export artifacts. `--dry-run` validates without writing a report.
+
 Checks include root/collection ownership, required component counts, schema and
 recipe/config consistency, stage, semantic duplicate/default names, parent ownership,
 zero/negative/nonfinite scales, unapplied scale, visibility, missing materials,

@@ -155,6 +155,9 @@ def build(entry, config, style, *, rebuild=False, stage=None, components=None,
                 ctx = BuildContext(entry, plan["stage"], style, pivot, staging, key, specs[key], lookup, "GAT_Stage_")
                 entry.load().build_component(ctx, key, config)
         built = list(staging.objects)
+        if config.get("appearance"):
+            from .recolor import apply_appearance
+            apply_appearance(built, config["appearance"], style)
         unregistered = (set(bpy.data.objects) - before_objects) - set(built) - {pivot}
         if unregistered:
             raise ValueError("Recipe created unregistered objects; register every generated object with ctx.add")

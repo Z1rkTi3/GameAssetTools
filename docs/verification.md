@@ -1,101 +1,95 @@
-# Version 0.1.0 verification and scope
+# Version 0.4.0 verification and scope
 
-Release checks rerun on **2026-09-11**: Windows, Blender **5.2.0 LTS**
-(`fbe6228777e7`), host Python **3.12.14**. **42 automated tests passed**, plus
-13 CLI smoke commands and standalone ZIP import/installation checks. A fresh
-virtual environment installed the checkout with `python -m pip install -e .`;
-the installed `gat --version` and `gat list` entry points also passed.
-Generated artifacts, logs, and validation-only dependencies are ignored under
-`output/`. No user-authored scene content or application preferences were replaced.
+Release checks: **2026-09-14**, Windows, Blender **5.2.0 LTS**
+(`fbe6228777e7`), host Python **3.13**. Runtime dependencies remain the Python
+standard library and Blender. Optional skill validation uses PyYAML outside the
+project/runtime package.
 
-## Executed checks
+## Automated suites
 
-| Command (from repository root) | Result |
-|---|---|
-| `python -m unittest discover -s tests -p "test_*.py"` | 14 tests passed: naming, configs, parameter effects, registry/scaffolding, style, CLI parsing, output guards, version consistency, ZIP contents/reproducibility and overwrite protection |
-| `blender --background --factory-startup --python-exit-code 1 --python tests/blender_geometry.py` | 11 tests passed: geometry volumes/topology, modifiers/booleans, materials, hierarchy/pivots, selection/edit-mode preservation |
-| `blender --background --factory-startup --python-exit-code 1 --python tests/run_blender_tests.py` | 13 tests passed: three complete asset pipelines, all build stages, approvals/manual edits, rollback, targeted rebuilds, reproduction, units, validation and dry-runs |
-| `blender --background --factory-startup --python-exit-code 1 --python tests/blender_addon_test.py` | 4 tests passed: registration cycles, operators/properties/panel registration, dynamic discovery/controls, edits, inspection, status, save/export |
-| `blender --background --factory-startup --python-exit-code 1 --python tests/check_packaged_addon.py` | Standalone ZIP imported and built an asset with checkout imports excluded |
-| `python tests/run_cli_smoke.py` | 13 real host/Blender commands passed, including compact JSON, unchanged rebuild, error exit and saved-file preservation |
-| `python tests/run_install_smoke.py` | ZIP installed/enabled, built an asset, and disabled through Blender preferences operators using isolated temporary user directories |
-| `python -m compileall -q game_asset_tools game_assets blender_addon scripts tests` | Passed |
-| Bundled Skill Creator `quick_validate.py .agents/skills/game-asset-tools` | Passed. Its optional PyYAML dependency was installed only in ignored `output/validation_tools`; it is not a GameAssetTools dependency |
+Run Python tests with `python -m unittest discover -s tests -p "test_*.py"`.
+Run each Blender script using
+`blender --background --factory-startup --python-exit-code 1 --python tests/<script>.py`.
 
-Use your actual Python/Blender paths if not on PATH. The CLI smoke test exercises
-Windows Blender discovery. Release-check logs are in
-`output/publishing/{geometry,workflow,addon,packaged,install,cli}.log`.
-The tested archive is `output/game_asset_tools_blender_0.1.0.zip`; both package
-checks also accept `--zip` to test an explicitly selected release archive.
-Machine-readable evidence is in
-`output/smoke/test_result.json`, `output/smoke/artifacts.json`, and
-`output/cli_smoke/responses.json`.
+| Suite | Passed tests |
+|---|---:|
+| Python contracts, settings, CLI, translation catalogs and both ZIP builders | 56 |
+| `blender_geometry.py` | 11 |
+| `run_blender_tests.py` | 13 |
+| `blender_recolor_test.py` | 6 |
+| `blender_material_inspection_test.py` | 7 |
+| `blender_batch_test.py` | 4 |
+| `blender_view_copy_test.py` | 5 |
+| `blender_addon_test.py` | 5 |
+| `blender_sprites_test.py` | 6 |
+| `blender_sprite_ui_test.py` | 9 |
+| `blender_ui_polish_test.py` | 12 |
+| `blender_i18n_test.py` | 4 |
+| `game_assets/towers/rubin_tower/verify_blender.py` (saved blockout) | 3 |
+| **Total** | **141** |
 
-[GitHub Actions](../.github/workflows/tests.yml) runs the 14 Python-only tests,
-CLI/registry checks, compilation, and ZIP packaging on Windows/Linux with Python
-3.11/3.12. Blender integration remains a local check. Live CI results are available
-on the repository's Actions page; the local test totals above do not include CI
-matrix repetitions. Three packaging regression tests were added to the original
-39-test implementation suite for this release.
+These cover the bundled watchtower, scout mech, cargo crate and ruby tower;
+component locks/manual-edit guards, geometry-preserving recolor, batch isolation,
+static GLB save/export, sprite framing/transparency and source preservation.
+New UI checks cover separate project/asset drafts, stale revisions, integer choices,
+explicit reload, report name collisions, saved-file reopening, sole/multiple asset
+selection, panel action availability, language overrides and preference persistence.
 
-The artifact test builds each asset in a clean scene, renders all six standard
-views at 512px, validates without errors/warnings, saves and reopens its `.blend`,
-compares inspection data, exports GLB while excluding a foreign object, checks the
-GLB structure, and imports it into another clean scene. Separate tests cover 256px
-component previews, 1024px debug previews, framing reuse, and selection/scene
-preservation. Perspective previews were visually inspected; this caught and fixed
-crate coplanar surfaces and led to clearer opaque example window/cockpit materials.
+Russian Blender is tested with new-datablock translation enabled and actual build,
+preview and sprite export. World shader lookup uses node types, not localized names.
 
-## Specification audit
+## Integration and packaging
 
-This maps the numbered source specification to implementation and concrete evidence.
-Suggested names/layouts are implemented with equivalent cohesive modules; optional
-and explicitly future systems are distinguished from the first-version deliverables.
+Additional real-process checks:
 
-| Spec sections | Evidence / implemented result |
-|---|---|
-| 1–4: reusable framework, agent efficiency, no paid dependencies, four layers | `core/`, `asset/`, `operations.py`, CLI, add-on, `.agents/skills`; three unrelated recipe families; zero runtime dependencies in `pyproject.toml` |
-| 5–7: reusable semantic Core, raw bpy escape hatch | `core/{geometry,modifiers,materials,transforms,collections,naming}.py`; geometry tests; recipe-specific construction remains outside Core and uses `ctx.add` |
-| 8–12: recipes, contract, useful typed parameters, components | `asset/{recipe,parameters,registry,context}.py`; pure contract tests and three loaded recipes; dependency closure tested on body and right-weapon changes |
-| 13–15: semantic names, collections, approval/locking | `asset/{metadata,scene,lifecycle}.py`; naming tests; targeted preservation and locked/manual-edit tests |
-| 16–19: simple construction, blockout-first stages and approval | Three primitive recipes, `ctx.stage`, approval-gated advancement; `test_stage_approval_and_all_stages` exercises all three assets through REFINE/DETAIL/FINALIZE |
-| 20–24: six standard views, stable framing, component preview, compact inspection | `preview/`, `inspection/`; 18 standard PNGs; targeted/debug preview tests; world bounds and evaluated polygon statistics |
-| 25–28: Codex access, persistent instructions, compact commands | Repository skill, root/Codex AGENTS, six workflows, CLI JSON protocol, 13-command smoke test. Optional interactive bridge is not needed for either working interface |
-| 29–31: generic add-on/browser/typed controls | `blender_addon/game_asset_tools_addon/`; dynamic category/asset/stage/component enums; float/int/bool/string/choice controls; new recipe discovered without UI edits |
-| 32–35: inherited style and simple reusable materials | `game_style.json`, `style/`, `core/materials.py`; style merge/isolation and material reuse/manual-preservation/transmission/emission tests |
-| 36–39: units, Godot/GLB, validation/statistics | Root metric scale and glTF axis conversion documented; save/export, actual GLB import, display-unit preservation, validation corruption test; no arbitrary polycount limit |
-| 40–43: future collision, LOD, rigging, sprite rendering | Independent export/preview modules, semantic hierarchy/helpers/sockets provide extension points. These features are explicitly future work, not implemented or claimed |
-| 44–48: metadata, deterministic rebuild, manual edits, versions | Schema 1, Core 0.1.0, recipe versions/source digests, saved config/style, fingerprints, exact reproduction test, manual-edit guard, documented compatible-extension policy |
-| 49–50: Git-friendly source and tests | `.gitignore`, README/changelog/docs/tests, MIT license and CI; outputs excluded; pure and real Blender runners executed; source and release packaging checked for publication |
-| 51: three structurally different examples | Watchtower repetition/windows, scout mech joints/hierarchy/weapons, cargo crate frame/lid/optional handles; all build/preview/save/export/import successfully |
-| 52–54: required docs, concise AGENTS, create workflow | All ten requested topic documents plus focused workflows; root AGENTS contains the required Core-modification rule; `create` scaffold tested |
-| 55–61: targeted edits, visual reasoning, references, restrained Core growth | Skill and refine/inspect workflows; component rebuild preserves unrelated object pointers/fingerprints/materials; stored config reused between numerical edits |
-| 62–63: cohesive modules, no everything-manager | Modeling split by responsibility; lifecycle owns build replacement; operations dispatches without modeling; no per-asset UI classes |
-| 64–67: clear failures, logging, dry-run, practical efficiency | Structured CLI errors/nonzero exit, INFO/WARNING/ERROR/DEBUG stdlib logging into Blender logs, pre-mutation plans, no-op rebuilds, lazy recipe loading |
-| 68–71: interface dependency direction, headless and interactive | Core imports no UI/Codex modules; add-on invokes `operations.execute`; CLI runner invokes the same function; both paths tested |
-| 72–75: ownership metadata, registry, flexible categories | Asset root properties/object identity, registry discovery by metadata, duplicate-ID errors, fresh arbitrary category/asset created in tests |
-| 76–80: predictable paths, JSON reports, auto framing, optional debug | `export/paths.py`, preview/validation reports, stored center/radius, named/color debug components with bounds and origin axes; overwrite guards tested |
-| 81–87: symmetry, repetition, bevel/boolean, pivots, sockets, engine readiness | Core mirror/array/boolean/bevel/pivot/socket helpers tested; tower loop repetition and bilateral mech; static GLB hierarchy/material/scale pipeline |
-| 88–89: human and Codex workflows independently useful | Standalone add-on ZIP build without checkout, actual isolated installation/enable/disable; CLI commands without add-on registration; both use identical Core |
-| 90–100: incremental implementation, execution, install, Windows, stdlib, quality | Core exercised before add-on integration; actual Blender fixes and execution; saved-file reopen/import tests; ZIP registration/build; installation and extension docs |
-| 101–107: art defaults, references authoritative, constrained edits, approvals, reproducibility, explicit destruction | Low-detail examples; instructions preserve reference authority; targeted/manual/locked/reproduction tests; rebuild/delete plans and explicit artifact/manual overwrite flags |
-| 108–112: scalable recipe discovery and low context | No hardcoded asset list in UI/Core; small registry metadata response, component inspection, concise skill routing and workflows, detailed logs kept out of stdout |
-| 113–120: complete first-version workflow and architecture | Executable shared Core + recipes + two interfaces; sample artifacts, passing suites, source/docs/ZIP delivered; no architecture-only or one-asset prototype |
+- `tests/blender_sprite_roundtrip_test.py`: host CLI → manual Blender settings →
+  host CLI → rendered atlas, using a temporary Unicode project path.
+- `tests/run_cli_smoke.py`: 13 actual CLI requests, including saved-file edits,
+  guards, unchanged rebuild and compact JSON.
+- `tests/check_packaged_addon.py`: standalone ZIP import/build without checkout.
+- `tests/run_install_smoke.py`: isolated add-on install/enable/build/disable.
+- `tests/run_installer_persistence_smoke.py`: installer preserves an existing
+  preference and makes an exact backup in a disposable profile.
+- `tests/run_release_candidate_smoke.py`: exact Blender/Codex ZIPs; byte-identical
+  packaged Core and wrappers; isolated home, Codex and Blender folders; pure locale
+  import; CLI init/settings/build/preview; manual build/preview and settings round trip.
+- `compileall`, `git diff --check`, plugin manifest and both skill validators.
+
+The candidate archives are `output/game_asset_tools_blender_0.4.0.zip` and
+`output/game_asset_tools_codex_0.4.0.zip`. Logs and generated evidence live under
+`output/reports/v04/` and `output/release_candidate_0_4_final/`; they are excluded from Git.
+See [development](development.md) for reproducible commands and isolation rules.
+
+GitHub Actions runs Python tests, CLI checks, compilation and both package builds
+on Windows/Linux with Python 3.11/3.12. Blender integration is verified locally.
+
+## Existing saved assets
+
+Four external ruby-tower snapshots were opened and rendered from front/perspective.
+Source file hashes, object fingerprints and saved root metadata were unchanged.
+Validation results were compared with the previously installed 0.3 Core:
+
+- The REFINE snapshot retains its existing recipe-version warning and no errors.
+- Three earlier snapshots retain pre-existing missing-parameter errors against the
+  newer external recipe: `supports.foot_flare` or `architecture.wall_inset`.
+
+The 0.4 UI handles unavailable stages/missing parameters without crashing or
+leaving a partial invalid form. It does not silently migrate historical recipes or
+regenerate approved geometry. Use the matching original recipe/project to rebuild
+an older snapshot. Preview remains available without changing its geometry.
 
 ## Practical boundaries
 
-- Windows/Blender 5.2.0 LTS is the verified Blender environment. Blender integration
-  on other operating systems/Blender versions and a real Godot project import have
-  not been tested. Python-only CI does not establish Blender compatibility.
-- Add-on registration, panel class/properties and operators are exercised in Blender;
-  a human visual audit of the sidebar at every screen size is not performed.
-- Example outputs are blockouts; they are not claims of reference reconstruction or
-  final artistic approval. Future asset-specific art decisions still need review.
-- Recipe execution is trusted Python. Staging protects normal registered construction
-  failures, not arbitrary external side effects or edits to pre-existing data.
-- Fingerprints cover ordinary static geometry/material/transform edits, not every
-  animation/driver/constraint system. Lock manually rigged or unusual components.
-- Save preserves the whole scene. GLB export includes owned non-helper asset objects;
-  unmanaged objects remain in the blend and are reported as excluded from GLB.
-- Collision, LOD, rigging/animation pipelines, turntables/sprite sheets, and the
-  optional local live bridge remain the explicitly future/optional work from the spec.
+- Windows/Blender 5.2 is the verified integration environment. The declared Blender
+  4.2 minimum, Blender on other OS versions and real Godot import remain unverified.
+- UI registration, draw methods and operators are tested in Blender; a human visual
+  audit of every sidebar width/display scaling is not claimed.
+- UI labels, choices, status messages and operator descriptions support EN/RU.
+  Standard Blender property tooltips and technical reports retain source text;
+  unknown third-party recipe labels use their original text.
+- Session drafts clear when opening a file, disabling the add-on or closing Blender.
+  Applied geometry and explicitly saved shared sprite profiles persist normally.
+- Recipes are trusted local Python. Staging does not undo arbitrary external effects.
+  Lock manually rigged/animated components outside the static fingerprint contract.
+- Sprites are static direction atlases. Animation, collision/LOD generation and
+  rigging pipelines remain future work.

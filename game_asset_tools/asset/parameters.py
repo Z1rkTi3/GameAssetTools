@@ -125,7 +125,7 @@ def validate_config(entry: "RecipeEntry", config: dict[str, Any]) -> dict[str, A
 
     if not isinstance(config, dict):
         raise ValueError("Config must be a JSON object.")
-    extra = set(config) - {"schema_version", "asset", "parameters", "style"}
+    extra = set(config) - {"schema_version", "asset", "parameters", "style", "appearance", "sprites"}
     if extra:
         raise ValueError(f"Unknown config fields: {', '.join(sorted(extra))}.")
     if type(config.get("schema_version")) is not int or config["schema_version"] != SCHEMA_VERSION:
@@ -134,6 +134,9 @@ def validate_config(entry: "RecipeEntry", config: dict[str, Any]) -> dict[str, A
         raise ValueError(f"Config asset must be {entry.id!r}.")
     if not isinstance(config.get("parameters"), dict) or not isinstance(config.get("style", {}), dict):
         raise ValueError("Config parameters and style must be JSON objects.")
+    if "sprites" in config:
+        from game_asset_tools.sprites.settings import validate_settings
+        validate_settings(config["sprites"])
     recipe = entry.load()
     paths = [parameter.path for parameter in recipe.parameters]
     if len(paths) != len(set(paths)):
@@ -145,6 +148,9 @@ def validate_config(entry: "RecipeEntry", config: dict[str, Any]) -> dict[str, A
         parameter.validate(get_value(config["parameters"], parameter.path))
     components = recipe.components(config)
     validate_components(components)
+    if "appearance" in config:
+        from .appearance import validate_appearance
+        validate_appearance(config["appearance"], components)
     for parameter in recipe.parameters:
         missing = set(parameter.components) - set(components)
         if missing:
@@ -180,8 +186,9 @@ def changed_components(recipe: "AssetRecipe", old_config: dict[str, Any],
     all_keys = set(old_specs) | set(new_specs)
     if old_config == new_config:
         return set()
+    # Export controls do not affect generated geometry or its edit guards.
     if any(old_config.get(key) != new_config.get(key)
-           for key in (set(old_config) | set(new_config)) - {"parameters"}):
+           for key in (set(old_config) | set(new_config)) - {"parameters", "sprites"}):
         return all_keys
     old_values = old_config.get("parameters", {})
     new_values = new_config.get("parameters", {})

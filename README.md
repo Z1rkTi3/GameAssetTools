@@ -1,4 +1,4 @@
-# GameAssetTools 0.1.0
+# GameAssetTools 0.4.0
 
 [![Python tests](https://github.com/Z1rkTi3/GameAssetTools/actions/workflows/tests.yml/badge.svg)](https://github.com/Z1rkTi3/GameAssetTools/actions/workflows/tests.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -26,7 +26,27 @@ and style live alongside one shared Core.
 contract. A new asset needs a recipe/config, without a new UI class or asset-specific
 Core implementation.
 
-## Implemented in 0.1.0
+GameAssetTools is also available as a portable local **Codex plugin**. Build it with
+`python scripts/package_codex_plugin.py`, extract the ZIP in `output/`, and run
+`python game-asset-tools/install_codex_plugin.py`. The installer enables it in the
+personal marketplace. Start a new Codex task to use it from any local project.
+The ZIP includes Core and recipes, including Rubin Tower, and can be installed
+under another account/profile without copying credentials. See
+[plugin installation and usage](codex/plugins/game-asset-tools/README.md).
+
+## Implemented
+
+- English/Russian Blender sidebar: follow Blender's language or override it in
+  GameAssetTools preferences. Scene-aware controls and per-asset session drafts
+  keep the selected target clear while switching projects and recipes.
+- Toon/standard static sprite atlases with one saved settings profile shared by
+  manual Blender controls and Codex/CLI. See [sprite export](docs/sprites.md).
+- Material-only recolor with exact role/object plans, geometry invariants, protected
+  shared users and persistent object-scoped appearance overrides.
+- Material role inspection with linear RGBA, sRGB samples and optional SVG swatches.
+- Variant batches in one headless process with shared framing, JSON results and an
+  embedded comparison sheet. See [materials](docs/materials.md) and [batches](docs/batch_variants.md).
+- Optional framed viewing copies and independent validation report output modes.
 
 - Semantic geometry, modifiers, transforms/pivots, collections, and reusable materials.
 - Typed nested configurations, dynamic recipe discovery, component dependencies,
@@ -42,7 +62,7 @@ Core implementation.
 
 ## Planned / future
 
-Collision generation, LOD generation, rigging/animation pipelines, turntables/sprite
+Collision generation, LOD generation, rigging/animation pipelines, animated sprite
 sheets, and an optional live Blender bridge are **not implemented**. Godot project
 import remains unverified. The examples demonstrate the framework and are not
 architectural requirements or final reference-matched art.
@@ -52,7 +72,7 @@ architectural requirements or final reference-matched art.
 | Use | Requirement |
 |---|---|
 | Blender work | **Blender 5.2.0 LTS is the only verified Blender version.** The add-on declares a 4.2 API minimum; other versions are unverified. |
-| CLI / development | Python 3.11+; the local release checks used Python 3.12.14 on Windows. Keep the complete checkout for CLI use. |
+| CLI / development | Python 3.11+; the local release checks used Python 3.13 on Windows. Keep the complete checkout for CLI use. |
 | Blender add-on | Uses Blender's bundled Python; no separate Python installation is needed. |
 | Codex integration | A Codex environment that can read repository skills and run local Python/Blender commands. Codex is optional for manual add-on use. |
 | Operating systems | Blender integration was verified on Windows. Python-only CI covers Windows and Linux; this does not verify Blender on Linux. |
@@ -64,9 +84,9 @@ paid generator, or external service is required. Do not install host `bpy`.
 
 ### Blender Add-on installation
 
-1. Download **`game_asset_tools_blender_0.1.0.zip`** from the
-   [0.1.0 release](https://github.com/Z1rkTi3/GameAssetTools/releases/tag/v0.1.0).
-   Use this asset ZIP, not GitHub's automatic source-code archive.
+1. Run `python scripts/package_addon.py` to build **`game_asset_tools_blender_0.4.0.zip`**
+   in `output/`. This release includes shared sprite export and the English/Russian sidebar;
+   it has not been published as a GitHub release.
 2. In Blender, open **Edit → Preferences → Add-ons → Install from Disk**, select
    the ZIP, and enable **GameAssetTools**.
 3. Open the 3D View sidebar (`N`) and select **GameAssetTools**. Choose a category,
@@ -178,7 +198,7 @@ python -m unittest discover -s tests -p "test_*.py"
 python scripts/package_addon.py
 ```
 
-The ZIP builder produces `output/game_asset_tools_blender_0.1.0.zip`, checks version
+The ZIP builder produces `output/game_asset_tools_blender_0.4.0.zip`, checks version
 consistency, and includes the MIT license. `--overwrite` explicitly replaces an
 existing build. [CI](.github/workflows/tests.yml) runs Python-only tests, imports,
 compilation and packaging without Blender. The full Blender and installation

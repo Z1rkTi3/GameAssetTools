@@ -162,7 +162,7 @@ def run_blender(request: dict[str, Any], executable: Path) -> dict[str, Any]:
             response = read_json(response_path)
         else:
             response = {"status": "error", "error": "Blender produced no response.", "exit_code": completed.returncode}
-        if completed.returncode and response.get("status") != "error":
+        if completed.returncode and response.get("status") not in {"error", "failed", "blocked", "invalid"}:
             response = {"status": "error", "error": "Blender exited unsuccessfully after producing its response.",
                         "exit_code": completed.returncode, "response": response}
         response["log"] = str(log_path)
@@ -180,7 +180,13 @@ def make_parser() -> argparse.ArgumentParser:
     create.add_argument("asset")
     create.add_argument("--category", default="other")
     create.add_argument("--display-name")
-    for action in ("build", "rebuild", "inspect", "preview", "validate", "save", "export", "status", "delete"):
+    sprite_settings = commands.add_parser("sprite-settings", help="Read or update the shared asset-local sprite profile without Blender")
+    sprite_settings.add_argument("asset")
+    sprite_settings.add_argument("--set", action="append", default=[], metavar="KEY=JSON", help="Update a shared sprite setting (repeatable)")
+    sprite_settings.add_argument("--expected-revision", help="Reject a save if the config changed since it was loaded")
+    sprite_settings.add_argument("--dry-run", action="store_true")
+    sprite_settings.add_argument("--schema", action="store_true", help="Include the same field definitions used by Blender UI")
+    for action in ("build", "rebuild", "recolor", "batch", "inspect", "preview", "sprites", "validate", "save", "export", "status", "delete"):
         command = commands.add_parser(action, help=f"{action.capitalize()} an asset through Blender Core")
         command.add_argument("asset")
         command.add_argument("--config", type=Path, help="Overlay config JSON")
@@ -197,6 +203,21 @@ def make_parser() -> argparse.ArgumentParser:
         command.add_argument("--reframe", action="store_true", help="Explicitly refresh persisted preview framing")
         command.add_argument("--debug", action="store_true", help="Include optional visual debug overlays")
         command.add_argument("--state", choices=("editable", "approved", "locked"), help="Approval state for the status action")
+        if action == "recolor":
+            command.add_argument("--materials", type=Path, required=True, help="JSON mapping allowed roles to changed properties")
+            command.add_argument("--object", dest="objects", action="append", default=[], help="Exact owned object name (repeatable)")
+        if action == "inspect":
+            command.add_argument("--swatches", action="store_true", help="Write a visual SVG role/color map beside inspection JSON")
+        if action == "sprites":
+            command.add_argument("--preview", dest="sprite_preview", action="store_true", help="Render one angle using the saved sprite profile")
+        if action == "batch":
+            command.add_argument("--batch-config", type=Path, required=True, help="Versioned variant manifest JSON")
+        if action == "validate":
+            command.add_argument("--report-mode", choices=("file", "stdout", "unique", "replace"), default="file",
+                                 help="Report only: protected fixed file, no file, unique file, or replace fixed report")
+        if action == "save":
+            command.add_argument("--view-copy", action="store_true", help="Save a separate framed viewing copy, preserving the working view")
+            command.add_argument("--save-view", choices=VIEWS, default="perspective", help="Viewing-copy viewport direction")
     return parser
 
 
@@ -210,9 +231,17 @@ def main(argv: list[str] | None = None) -> int:
             response = {"status": "ok", "assets": [entry.as_dict() for entry in Registry(project).list()]}
         elif args.action == "create":
             response = create_asset(project, args.asset, args.category, args.display_name)
+        elif args.action == "sprite-settings":
+            from .operations import execute
+            request = {"action": args.action, "project": str(project), "asset": args.asset,
+                       "expected_revision": args.expected_revision,
+                       "dry_run": args.dry_run, "schema": args.schema}
+            if args.set:
+                request["sprite_updates"] = parse_overrides(args.set)
+            response = execute(request)
         else:
             Registry(project).get(args.asset)
-            if args.action in ("rebuild", "status", "delete") and args.blend is None:
+            if args.action in ("rebuild", "recolor", "status", "delete") and args.blend is None:
                 raise ValueError(f"{args.action} requires --blend pointing to the existing asset file.")
             if args.action == "status" and args.state is None:
                 raise ValueError("status requires --state editable, approved, or locked.")
@@ -230,9 +259,26 @@ def main(argv: list[str] | None = None) -> int:
                        "overwrite": args.overwrite, "replace_edited": args.replace_edited,
                        "dry_run": args.dry_run, "views": views, "resolution": args.resolution,
                        "reframe": args.reframe, "debug": args.debug, "state": args.state}
+            if args.action == "recolor":
+                request.update(materials=read_json(args.materials), objects=args.objects)
+            if args.action == "inspect":
+                request["swatches"] = args.swatches
+            if args.action == "sprites":
+                if args.config or args.set or args.stage or args.component or args.resolution or args.views or args.debug or args.reframe or args.replace_edited or args.state:
+                    raise ValueError("sprites uses the saved profile; change it with sprite-settings --set KEY=JSON")
+                request.pop("views", None)
+                request["sprite_preview"] = args.sprite_preview
+            if args.action == "batch":
+                if not args.batch_config.expanduser().is_file():
+                    raise ValueError("Batch config file does not exist")
+                request["batch_config"] = str(args.batch_config.expanduser().resolve())
+            if args.action == "validate":
+                request["report_mode"] = args.report_mode
+            if args.action == "save":
+                request.update(view_copy=args.view_copy, save_view=args.save_view)
             response = run_blender(request, find_blender(args.blender))
         print(json.dumps(response, ensure_ascii=True, separators=(",", ":"), allow_nan=False))
-        return 1 if response.get("status") == "error" else 0
+        return 1 if response.get("status") in {"error", "failed", "blocked", "invalid"} else 0
     except (ValueError, OSError) as exc:
         print(json.dumps({"status": "error", "error": str(exc)}, ensure_ascii=True, separators=(",", ":")))
         return 1

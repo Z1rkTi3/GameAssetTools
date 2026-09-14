@@ -38,5 +38,7 @@ jobs:
         run: |
           python -m game_asset_tools --version
           python -m game_asset_tools list
-      - name: Build add-on archive without Blender
-        run: python scripts/package_addon.py
+      - name: Build both release archives without Blender
+        run: |
+          python scripts/package_addon.py
+          python scripts/package_codex_plugin.py
