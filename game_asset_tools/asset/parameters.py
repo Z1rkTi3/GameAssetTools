@@ -158,6 +158,34 @@ def validate_config(entry: "RecipeEntry", config: dict[str, Any]) -> dict[str, A
     return config
 
 
+def effective_saved_config(entry: "RecipeEntry", raw: dict[str, Any]) -> dict[str, Any]:
+    """Читает сохранённый config с явно совместимыми defaults новых параметров.
+
+    Рецепт явно разрешает их через ``saved_parameter_defaults = ("some.path",)``.
+    Только отсутствующие разрешённые поля получают объявленный default;
+    дисковый config не подмешивается, сохранённый документ не изменяется.
+    """
+    recipe = entry.load()
+    paths = getattr(recipe, "saved_parameter_defaults", ())
+    if not isinstance(paths, tuple) or any(not isinstance(path, str) for path in paths):
+        raise ValueError("Recipe saved_parameter_defaults must be a tuple of declared parameter paths.")
+    if len(paths) != len(set(paths)):
+        raise ValueError("Recipe saved_parameter_defaults contains duplicate paths.")
+    parameters = {parameter.path: parameter for parameter in recipe.parameters}
+    unknown = set(paths) - set(parameters)
+    if unknown:
+        raise ValueError(f"Recipe saved_parameter_defaults has undeclared paths: {', '.join(sorted(unknown))}.")
+    config = deepcopy(raw)
+    if isinstance(config, dict) and isinstance(config.get("parameters"), dict):
+        absent = object()
+        for path in paths:
+            if get_value(config["parameters"], path, absent) is absent:
+                # set_value отклоняет скалярного родителя, не заменяя ошибочное
+                # явно заданное значение новой вложенной структурой.
+                set_value(config["parameters"], path, parameters[path].default)
+    return validate_config(entry, config)
+
+
 def load_config(entry: "RecipeEntry", path: str | Path | None = None,
                 overrides: dict[str, Any] | None = None) -> dict[str, Any]:
     """Load defaults, optional config and dotted parameter overrides in that order."""

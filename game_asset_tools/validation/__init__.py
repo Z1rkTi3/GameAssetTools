@@ -7,7 +7,7 @@ import re
 import bpy
 
 from game_asset_tools.asset.metadata import fingerprint
-from game_asset_tools.asset.parameters import validate_config
+from game_asset_tools.asset.parameters import effective_saved_config
 from game_asset_tools.asset.recipe import validate_stage
 from game_asset_tools.asset.scene import asset_objects, component_records, find_root, root_object
 from game_asset_tools.inspection import statistics
@@ -31,8 +31,7 @@ def validate_asset(asset_id, entry=None):
     try:
         validate_stage(root.get("gat_stage", ""), entry.supported_stages if entry else ("BLOCKOUT", "REFINE", "DETAIL", "FINALIZE"))
         if entry:
-            config = json.loads(root.get("gat_config", "{}"))
-            validate_config(entry, config)
+            config = effective_saved_config(entry, json.loads(root.get("gat_config", "{}")))
             if root.get("gat_recipe_version") != entry.recipe_version:
                 warnings.append("Built recipe version differs from current recipe")
             expected = set(entry.load().components(config))

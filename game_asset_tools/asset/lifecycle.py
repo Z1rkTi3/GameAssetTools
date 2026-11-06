@@ -10,7 +10,7 @@ from game_asset_tools import __version__
 from game_asset_tools.core.naming import semantic_name
 from .context import BuildContext
 from .metadata import encode, fingerprint
-from .parameters import changed_components, validate_config
+from .parameters import changed_components, effective_saved_config, validate_config
 from .recipe import validate_components, validate_stage
 from .scene import asset_objects, component_records, find_root, root_object
 
@@ -60,7 +60,10 @@ def _guard(root, selected, *, replace_edited=False, stage_change=False):
 
 def plan_build(entry, config, *, rebuild=False, stage=None, components=None, replace_edited=False, style=None):
     """Return exact affected components and blockers before any scene mutation."""
-    validate_config(entry, config)
+    if rebuild:
+        config = effective_saved_config(entry, config)
+    else:
+        validate_config(entry, config)
     recipe = entry.load()
     specs = recipe.components(config)
     validate_components(specs)
@@ -73,7 +76,7 @@ def plan_build(entry, config, *, rebuild=False, stage=None, components=None, rep
     old_records = component_records(root) if root else {}
     recipe_digest = hashlib.sha256((entry.path / "asset.py").read_bytes()).hexdigest()
     stage_change = bool(root and stage != root.get("gat_stage"))
-    old_config = json.loads(root["gat_config"]) if root else None
+    old_config = effective_saved_config(entry, json.loads(root["gat_config"])) if root else None
     all_keys = set(specs) | set(old_records)
     affected = (changed_components(recipe, old_config, config) | (set(specs) - set(old_records))) if root else set(specs)
     if root and (stage_change or root.get("gat_recipe_version") != entry.recipe_version
@@ -113,6 +116,8 @@ def _remove_object(obj):
 def build(entry, config, style, *, rebuild=False, stage=None, components=None,
           replace_edited=False, dry_run=False):
     """Stage affected geometry before replacing objects; preserve unrelated data."""
+    if rebuild:
+        config = effective_saved_config(entry, config)
     plan = plan_build(entry, config, rebuild=rebuild, stage=stage, components=components,
                       replace_edited=replace_edited, style=style)
     if dry_run:

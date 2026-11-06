@@ -5,7 +5,7 @@ import logging
 from pathlib import Path
 
 from game_asset_tools.asset.registry import Registry
-from game_asset_tools.asset.parameters import load_config, merge_values, read_json, set_value, validate_config
+from game_asset_tools.asset.parameters import effective_saved_config, load_config, merge_values, read_json, set_value, validate_config
 from game_asset_tools.style import load_style
 
 
@@ -69,7 +69,7 @@ def execute(request: dict) -> dict:
     if action in ("build", "rebuild"):
         root = find_root(asset_id, required=False)
         if root and action == "rebuild":
-            config = json.loads(root["gat_config"])
+            config = effective_saved_config(entry, json.loads(root["gat_config"]))
             if request.get("config"):
                 config = merge_values(config, read_json(Path(request["config"])))
             for path,value in (request.get("overrides") or {}).items():

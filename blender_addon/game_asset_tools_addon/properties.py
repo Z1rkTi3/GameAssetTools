@@ -9,7 +9,7 @@ import zlib
 import bpy
 from bpy.props import BoolProperty, CollectionProperty, EnumProperty, FloatProperty, FloatVectorProperty, IntProperty, StringProperty
 
-from game_asset_tools.asset.parameters import get_value, load_config
+from game_asset_tools.asset.parameters import effective_saved_config, get_value, load_config
 from game_asset_tools.asset.registry import Registry
 
 from . import session
@@ -173,12 +173,13 @@ def _root_source(settings, root, *, bind=False):
 
 
 def _geometry_source(settings, entry, scene_values=True):
-    config = load_config(entry)
     stage = "BLOCKOUT" if "BLOCKOUT" in entry.supported_stages else entry.supported_stages[0]
     root = scene_root(settings)
     if scene_values and root and _root_source(settings, root) == str(project_root(settings)):
-        config = json.loads(root["gat_config"])
+        config = effective_saved_config(entry, json.loads(root["gat_config"]))
         stage = root.get("gat_stage", stage)
+    else:
+        config = load_config(entry)
     # Sprite-only edits must not invalidate geometry drafts.
     data = {"parameters": config["parameters"], "stage": stage,
             "recipe": hashlib.sha256((entry.path / "asset.py").read_bytes()).hexdigest()}

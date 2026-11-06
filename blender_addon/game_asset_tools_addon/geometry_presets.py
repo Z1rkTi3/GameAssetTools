@@ -8,7 +8,7 @@ import bpy
 from bpy.props import StringProperty
 from bpy_extras.io_utils import ExportHelper, ImportHelper
 
-from game_asset_tools.asset.parameters import get_value, load_config, set_value, validate_config
+from game_asset_tools.asset.parameters import effective_saved_config, get_value, load_config, set_value, validate_config
 from game_asset_tools.export.paths import write_json
 from . import properties
 from .i18n import LocalizedOperator, tr
@@ -22,7 +22,7 @@ def draft_config(settings, *, validate=True):
         raise ValueError(state.get("reason") or "Choose an available recipe first")
     entry = properties.registry(settings).get(settings.asset)
     root = state["root"]
-    config = json.loads(root["gat_config"]) if root is not None else load_config(entry)
+    config = effective_saved_config(entry, json.loads(root["gat_config"])) if root is not None else load_config(entry)
     # Сохраняем ту же revision-защиту, что обычная кнопка Rebuild.
     updates = properties.geometry_updates(settings, check_revision=True)
     for path, value in updates.items():
