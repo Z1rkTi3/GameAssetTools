@@ -201,10 +201,28 @@ def geometry_updates(settings, *, check_revision=False):
     if not source or source["key"] != _key(settings):
         raise ValueError(tr("Load geometry settings for the selected project and asset first"))
     updates = parameter_updates(settings.parameters)
+    entry = registry(settings).get(settings.asset)
     if check_revision:
-        entry = registry(settings).get(settings.asset)
         if source["revision"] != _geometry_source(settings, entry)[2]:
             raise ValueError(tr("Geometry settings conflict: the source changed; reload geometry settings before rebuilding"))
+    # RNA хранит FloatProperty как float32. Точная UI-копия объявленной границы
+    # может оказаться чуть вне её float64-значения (.18 → .180000007...).
+    # Узнаём именно этот round-trip, без допуска/обрезания произвольных чисел.
+    # JSON/CLI по-прежнему проходят строгий Parameter.validate без этой поправки.
+    import struct
+    for parameter in entry.load().parameters:
+        if parameter.type != "float" or parameter.path not in updates:
+            continue
+        for bound in (parameter.min, parameter.max):
+            if bound is None:
+                continue
+            try:
+                rna_bound = struct.unpack("<f", struct.pack("<f", float(bound)))[0]
+            except OverflowError:
+                continue
+            if updates[parameter.path] == rna_bound:
+                updates[parameter.path] = float(bound)
+                break
     return updates
 
 

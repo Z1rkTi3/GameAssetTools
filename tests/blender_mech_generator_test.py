@@ -178,6 +178,21 @@ class MechGeneratorTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 geometry_presets.export_geometry(self.settings, path)
             self.assertFalse(path.exists())
+            # Валидный preset должен позволять восстановить ошибочный draft.
+            valid = Path(folder) / "valid.json"
+            valid.write_text(root["gat_config"], encoding="utf-8")
+            self.assertEqual(bpy.ops.game_asset_tools.geometry_import(filepath=str(valid)), {"FINISHED"})
+            self.assertEqual(self.snapshot(root), before)
+            self.assertEqual(geometry_presets.draft_config(self.settings)[1]["parameters"], json.loads(root["gat_config"])["parameters"])
+
+    def test_declared_float_boundaries_work_in_real_ui(self):
+        self.build()
+        for path, boundary in [("body.bevel", 0.18), ("legs.upper_thickness", 0.12), ("legs.upper_thickness", 0.34)]:
+            self.control(path, boundary)
+            _entry, config = geometry_presets.draft_config(self.settings)
+            from game_asset_tools.asset.parameters import get_value
+            self.assertEqual(get_value(config["parameters"], path), boundary)
+            self.assertEqual(bpy.ops.game_asset_tools.action(action="rebuild"), {"FINISHED"})
 
     def test_local_module_frames_survive_moved_root_and_rebuild(self):
         root = self.build()

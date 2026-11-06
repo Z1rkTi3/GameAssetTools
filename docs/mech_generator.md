@@ -53,9 +53,9 @@ Mech Battler сохраняются. Возможности генератора
 `blender --background --factory-startup --python-exit-code 1 --python tests/run_blender_tests.py`.
 Адресные проверки основной копии (Blender 5.2.0 LTS):
 
-- `python -B -m unittest discover -s tests -p "test_*.py"` — 98 tests PASS.
+- `python -B -m unittest discover -s tests -p "test_*.py"` — 99 tests PASS.
 - `blender --background --factory-startup --python-exit-code 1 --python tests/blender_mech_generator_test.py`
-  — 8 tests PASS: реальные UI controls/JSON/Rebuild, locks, ошибочное сочетание
+  — 9 tests PASS: реальные UI controls/JSON/Rebuild, locks, ошибочное сочетание
   допустимых углов, локальные frames при перемещённом/повёрнутом root, симметрия,
   замкнутость и объём сеток, башни, static GLB и повторный Blender import.
 - Три настоящих BLOCKOUT-preview (front/right/perspective) просмотрены; это
@@ -75,6 +75,12 @@ sprites не переносятся из импортируемого geometry p
 перечислены в подробном отчёте как сохранённые. Export сохраняет текущую полную
 конфигурацию с неизменными негеометрическими разделами в совместимом формате.
 Обычный CLI также принимает её через `--config`.
+
+Корректный JSON-пресет можно загрузить поверх ошибочного draft: проверяется
+входящая конфигурация до изменения controls, защита revision остаётся.
+На крайних значениях FloatProperty распознаётся только точный float32 round-trip
+объявленного min/max. Произвольные значения не обрезаются; JSON/CLI сохраняют
+строгие границы. Эти два пограничных сценария проверяются отдельным regression.
 
 ## Git и восстановление
 

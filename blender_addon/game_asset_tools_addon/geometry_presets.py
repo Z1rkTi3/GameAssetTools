@@ -34,7 +34,7 @@ def draft_config(settings, *, validate=True):
 
 def import_geometry(settings, path):
     """Валидация всего файла предшествует изменению хотя бы одного control."""
-    entry, current = draft_config(settings)
+    entry, current = draft_config(settings, validate=False)
     imported = load_config(entry, Path(path))
     parameters = entry.load().parameters
     items = {item.path: item for item in settings.parameters}

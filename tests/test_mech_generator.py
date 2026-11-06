@@ -149,6 +149,16 @@ class MechGeneratorTests(unittest.TestCase):
         self.assertEqual(set(self.recipe.components(self.config)), {"Body", "Leg_Left", "Leg_Right"})
         self.assertFalse(any(p["component"] == "Leg_Right" for p in self.module.geometry_data(self.config)))
 
+    def test_json_still_rejects_float32_values_outside_declared_bounds(self):
+        import struct
+        for path, bound in [("body.bevel", 0.18), ("legs.upper_thickness", 0.12), ("legs.upper_thickness", 0.34)]:
+            outside = struct.unpack("<f", struct.pack("<f", bound))[0]
+            with self.subTest(path=path, value=outside):
+                # Исправление относится только к Blender controls: числовой
+                # JSON payload за пределами диапазона остаётся некорректным.
+                with self.assertRaises(ValueError):
+                    load_config(self.entry, overrides={path: outside})
+
     def test_json_round_trip_and_rebuild_dependencies(self):
         restored = json.loads(json.dumps(self.config))
         self.assertEqual(self.recipe.mechanical_report(restored), self.recipe.mechanical_report(self.config))
