@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased — modular authoring foundation
+
+- Typed rig/part/slot contracts, real-scene inspection, portable component libraries
+  and transactional replacement with preserved neighbours, materials and animation.
+- Blender sidebar registration, validation, publication and installation of parts;
+  saved interface records survive reopening the source document.
+- Persistent recipe components preserve authored rigs during geometry, stage,
+  version and style rebuilds. Both lifetime-flag transitions require migration;
+  `replace_edited` cannot bypass this protection.
+- Opt-in skeletal GLB export, verified skins/clips and explicit named RGBA
+  attributes. Existing deliveries survive export or validation failures.
+- Standalone Blender fixtures cover the foundation in addition to the legacy
+  workflow suite. Historical external walker drivers remain local research tools.
+
 ## 0.4.0 — 2026-09-14
 
 - English/Russian sidebar with automatic Blender-language selection and an

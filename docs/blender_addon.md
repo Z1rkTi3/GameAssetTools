@@ -57,6 +57,28 @@ serve this live bridge. Start a new Codex task after adding the MCP configuratio
 This MCP configuration is separate from the portable GameAssetTools plugin; repeat
 it on another computer/profile if a live bridge is needed there.
 
+## Библиотека модульных компонентов
+
+В разделе **Библиотека компонентов / Component Library** выберите существующие
+проект, asset и компонент в поле **Цель / Target**. Укажите JSON-файл с
+`interfaces: {component: {part, slot, rig, armature, objects, sockets, contacts}}`;
+каждая ссылка имеет поля `component` и `local_name`. Команда **Загрузить и
+зарегистрировать** проверяет manifest, совместимость и настоящие объекты до
+изменения метаданных. При выборе Whole Asset регистрируются все interfaces.
+
+Укажите явную папку библиотеки, ID и положительную версию детали. **Опубликовать
+версию** сохраняет текущую форму как новую неизменяемую revision; существующая
+версия не перезаписывается. Публикация ручной формы не снимает защиту её
+исходных fingerprints. **Проверить установку** выполняет Core dry-run,
+**Установить компонент** заменяет только выбранный узел с проверками locks,
+ручных изменений и внешних ссылок. Rig, Actions и соседние компоненты сохраняются.
+
+Текущий manifest и новые ObjectRef хранятся внутри component record в `.blend`,
+поэтому повторная установка работает после обычного Save/Open без повторной
+регистрации прежнего JSON. После изменения процедурной геометрии manifest
+проверяется заново; устаревшие ссылки требуют явной регистрации. Это тот же API
+`game_asset_tools.assembly.authoring`, который доступен Python-автоматизации.
+
 ## Language and scene selection
 
 The **Language** control follows Blender by default (**Automatic**) and also offers
@@ -128,8 +150,9 @@ Build and rebuild affect the open scene; they do not save it implicitly. Save an
 export are explicit actions. Export runs Core validation. Blender scene edits can
 be undone; disk writes cannot be undone through Blender.
 
-All operators dispatch to `game_asset_tools.operations.execute`. The UI contains
-no modeling implementation and needs no changes when a new recipe is added.
+Recipe operators dispatch to `game_asset_tools.operations.execute`; component
+library actions use the shared `game_asset_tools.assembly.authoring` facade.
+The UI contains no modeling implementation and needs no changes when a new recipe is added.
 
 **Sprites** uses the same saved profile as Codex's `sprite-settings` command.
 Choose an editable **Project**, load the selected asset's profile, adjust its

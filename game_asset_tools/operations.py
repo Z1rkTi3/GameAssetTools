@@ -17,6 +17,10 @@ def execute(request: dict) -> dict:
     """
     project = Path(request["project"]).resolve()
     action, asset_id = request["action"], request["asset"]
+    if action == "export" and type(request.get("animations", False)) is not bool:
+        raise ValueError("animations must be a boolean")
+    if action == "export" and type(request.get("vertex_color_name", "")) is not str:
+        raise ValueError("vertex_color_name must be a string")
     logging.getLogger("game_asset_tools").debug("Dispatch %s for %s", action, asset_id)
     entry = Registry(project).get(asset_id)
     if action == "sprite-settings":
@@ -64,8 +68,12 @@ def execute(request: dict) -> dict:
         from game_asset_tools.export.paths import artifact_path
         kind, suffix = {"save": ("blend", "_view.blend" if request.get("view_copy") else ".blend"), "export": ("glb", ".glb"),
                         "preview": ("previews", "")}[action]
-        return {"asset": asset_id, "status": "planned", "action": action,
-                "output": str(artifact_path(output, kind, asset_id, suffix)), "overwrite": overwrite}
+        result = {"asset": asset_id, "status": "planned", "action": action,
+                  "output": str(artifact_path(output, kind, asset_id, suffix)), "overwrite": overwrite}
+        if action == "export":
+            result["animations_requested"] = request.get("animations", False)
+            result["vertex_color_name"] = request.get("vertex_color_name", "")
+        return result
     if action in ("build", "rebuild"):
         root = find_root(asset_id, required=False)
         if root and action == "rebuild":
@@ -119,7 +127,9 @@ def execute(request: dict) -> dict:
                           view=request.get("save_view") or "perspective")
     if action == "export":
         from game_asset_tools.export import export_asset
-        return export_asset(asset_id,output,entry=entry,overwrite=overwrite)
+        return export_asset(asset_id,output,entry=entry,overwrite=overwrite,
+                            animations=request.get("animations", False),
+                            vertex_color_name=request.get("vertex_color_name", ""))
     if action == "status":
         if request.get("dry_run"):
             return {"asset":asset_id,"status":"planned","state":request.get("state"),"components":components}

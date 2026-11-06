@@ -1,6 +1,7 @@
 """Thin operation dispatch, explicit confirmations, and compact report handling."""
 
 import json
+from dataclasses import asdict
 from pathlib import Path
 
 import bpy
@@ -44,6 +45,9 @@ def operation_request(settings, action, *, view="perspective", selected=False, d
         request["report_mode"] = settings.report_mode
     if action == "save":
         request.update(view_copy=settings.view_copy, save_view=settings.save_view)
+    if action == "export":
+        request["animations"] = settings.export_animations
+        request["vertex_color_name"] = settings.export_vertex_color_name
     return request
 
 
@@ -274,6 +278,60 @@ class GAT_OT_action(LocalizedOperator, bpy.types.Operator):
             return {"CANCELLED"}
 
 
+class GAT_OT_library(LocalizedOperator, bpy.types.Operator):
+    bl_idname = "game_asset_tools.library_action"
+    bl_label = "Component Library"
+    bl_description = "Register checked interfaces, validate, publish or install a compatible component"
+
+    action: EnumProperty(items=[(name, name.title(), name) for name in ("register", "validate", "publish", "plan", "install")])
+
+    @classmethod
+    def poll(cls, context):
+        return bool(context.scene and hasattr(context.scene, "game_asset_tools"))
+
+    def execute(self, context):
+        settings = context.scene.game_asset_tools
+        try:
+            from game_asset_tools.assembly import authoring
+            from game_asset_tools.asset.scene import component_records
+            state = properties.scene_state(settings, context)
+            if not state["asset_available"] or state["source_mismatch"]:
+                raise ValueError(tr(state["reason"] or "Choose a project and an available recipe first"))
+            asset, component = settings.asset, settings.component
+            if self.action == "register":
+                if not settings.library_manifest:
+                    raise ValueError(tr("Choose a part manifest first"))
+                document = authoring.load_document(bpy.path.abspath(settings.library_manifest))
+                result = authoring.register_document(asset, document, None if component == properties.ALL else component)
+            elif self.action == "validate":
+                names = ([component] if component != properties.ALL else
+                         [name for name, record in component_records(state["root"]).items() if authoring.INTERFACE_KEY in record])
+                if not names:
+                    raise ValueError(tr("Register component interfaces first"))
+                result = {"status": "pass", "asset": asset,
+                          "components": [authoring.validate_component(asset, name) for name in names]}
+            else:
+                if component in (properties.ALL, properties.EMPTY):
+                    raise ValueError(tr("Choose one component for publication or installation"))
+                if not settings.library_root or not settings.library_part_id.strip():
+                    raise ValueError(tr("Choose a library folder and a part ID"))
+                library_root = Path(bpy.path.abspath(settings.library_root))
+                if self.action == "publish":
+                    result = authoring.publish_component(library_root, asset, component,
+                                                         settings.library_part_id, settings.library_revision)
+                else:
+                    result = authoring.install_component(library_root, asset, component, settings.library_part_id,
+                                                         settings.library_revision, dry_run=self.action == "plan")
+            store_report(settings, result)
+            self.report({"INFO"}, status_text(settings, "last_status", context))
+            return {"FINISHED"}
+        except Exception as exc:
+            store_report(settings, {"status": "error", "errors": [str(exc)],
+                                    "issues": [asdict(issue) for issue in getattr(exc, "issues", ())]})
+            self.report({"ERROR"}, tr(str(exc)))
+            return {"CANCELLED"}
+
+
 class GAT_OT_report(LocalizedOperator, bpy.types.Operator):
     bl_idname = "game_asset_tools.show_report"
     bl_label = "Open Detailed Report"
@@ -290,4 +348,4 @@ class GAT_OT_report(LocalizedOperator, bpy.types.Operator):
 
 
 CLASSES = (GAT_OT_refresh, GAT_OT_use_selected_asset, GAT_OT_reload_geometry, GAT_OT_action,
-           GAT_OT_sprites, GAT_OT_sprite_image, GAT_OT_report)
+           GAT_OT_sprites, GAT_OT_sprite_image, GAT_OT_library, GAT_OT_report)

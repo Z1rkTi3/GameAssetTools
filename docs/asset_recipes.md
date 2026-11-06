@@ -53,6 +53,13 @@ stable identity, links the appropriate collection, and parents to the asset root
 root is moved. A component may intentionally build zero objects, e.g. disabled
 handles. Its expected object count is recorded for validation.
 
+Use `ComponentSpec("Rig", persistent=True)` for a component initialized once and
+then edited directly, such as an animated armature. It is preserved during stage
+advancement and dependent geometry rebuilds. Explicit regeneration, configuration
+changes affecting it, or removing its declaration require an explicit migration.
+Generated geometry may depend on a persistent rig; the reverse dependency blocks
+automatic replacement. See [assembly contracts](assembly.md) for the boundaries.
+
 Parameter `components=()` conservatively means every component. Otherwise list
 each direct effect. Dependency closure adds indirect effects. Do not expose every
 vertex as a parameter. Useful controls are proportions, counts, materials, and
@@ -61,7 +68,7 @@ meaningful placements. Keep unusual local geometry inside the recipe.
 Stages are BLOCKOUT, REFINE, DETAIL, FINALIZE. Use `ctx.stage` to control detail.
 Set current whole-stage status approved after reviewing its blockout; advancing
 requires this approval. Approved components reject ordinary rebuilds. An approved
-stage permits advancement of approved components, while locked components still
+stage permits advancement of approved components, while selected locked components still
 block. Changing a protected design requires marking the affected component editable.
 
 Existing names are never sufficient evidence of ownership. Rebuild/delete act on

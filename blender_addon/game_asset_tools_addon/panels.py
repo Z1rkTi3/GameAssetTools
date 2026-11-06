@@ -172,6 +172,32 @@ class GAT_PT_sprites(AssetSection, bpy.types.Panel):
         layout.label(text=status_text(settings, "sprite_status", context))
 
 
+class GAT_PT_library(AssetSection, bpy.types.Panel):
+    bl_idname = "GAT_PT_library"
+    bl_options = {"DEFAULT_CLOSED"}
+    title = "Component Library"
+
+    def draw(self, context):
+        layout, settings = self.layout, context.scene.game_asset_tools
+        layout.enabled = scene_ready(settings, context)
+        prop(layout, settings, "library_manifest", "Part Manifest")
+        row = layout.row(align=True)
+        row.operator("game_asset_tools.library_action", text=tr("Register Interfaces")).action = "register"
+        row.operator("game_asset_tools.library_action", text=tr("Validate Component")).action = "validate"
+        prop(layout, settings, "library_root", "Part Library")
+        prop(layout, settings, "library_part_id", "Part ID")
+        prop(layout, settings, "library_revision", "Part Revision")
+        layout.label(text=tr("Select one component in Target to publish or install"))
+        row = layout.row()
+        row.enabled = settings.component not in (properties.ALL, properties.EMPTY)
+        row.operator("game_asset_tools.library_action", text=tr("Publish Revision"), icon="EXPORT").action = "publish"
+        row = layout.row(align=True)
+        row.enabled = settings.component not in (properties.ALL, properties.EMPTY)
+        row.operator("game_asset_tools.library_action", text=tr("Check Installation")).action = "plan"
+        row.operator("game_asset_tools.library_action", text=tr("Install Component"), icon="IMPORT").action = "install"
+        layout.label(text=tr("Install respects manual edits, locks and existing rig"))
+
+
 class GAT_PT_output(AssetSection, bpy.types.Panel):
     bl_idname = "GAT_PT_output"
     bl_options = {"DEFAULT_CLOSED"}
@@ -184,6 +210,12 @@ class GAT_PT_output(AssetSection, bpy.types.Panel):
         prop(layout, settings, "view_copy", "Save Viewing Copy")
         if settings.view_copy:
             prop(layout, settings, "save_view", "Opening View")
+        prop(layout, settings, "export_animations", "Export Animations")
+        if settings.export_animations:
+            layout.label(text=tr("Preserve owned rig, skin and actions"))
+        prop(layout, settings, "export_vertex_color_name", "Vertex Color Attribute")
+        if settings.export_vertex_color_name:
+            layout.label(text=tr("Named color attribute is required on every mesh"))
         row = layout.row(align=True)
         row.enabled = scene_ready(settings, context)
         action(row, "Save Blend", "save")
@@ -208,4 +240,4 @@ class GAT_PT_management(AssetSection, bpy.types.Panel):
 
 
 CLASSES = (GAT_PT_asset, GAT_PT_geometry, GAT_PT_preview, GAT_PT_materials,
-           GAT_PT_sprites, GAT_PT_output, GAT_PT_management)
+           GAT_PT_sprites, GAT_PT_library, GAT_PT_output, GAT_PT_management)

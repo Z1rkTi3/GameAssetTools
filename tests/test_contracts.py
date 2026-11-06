@@ -45,6 +45,12 @@ class ContractTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_components({"A":ComponentSpec("Structure",("B",)),"B":ComponentSpec("Structure",("A",))})
 
+    def test_persistent_component_is_explicit_boolean(self):
+        validate_components({"Rig": ComponentSpec("Rig", persistent=True)})
+        for invalid in (1, "yes", None):
+            with self.assertRaises(ValueError):
+                validate_components({"Rig": ComponentSpec("Rig", persistent=invalid)})
+
     def test_dynamic_create_discovery_and_duplicate_ids(self):
         with tempfile.TemporaryDirectory() as folder:
             root=Path(folder)

@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "id": "rig_fixture",
+  "display_name": "Rigid animation export fixture",
+  "category": "tests",
+  "recipe_version": 1,
+  "supported_stages": ["BLOCKOUT"]
+}

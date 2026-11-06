@@ -36,6 +36,15 @@ under another account/profile without copying credentials. See
 
 ## Implemented
 
+- A parameterized industrial walker recipe with mirrored legs, geometric checks,
+  Blender geometry controls and JSON presets. See [Mech Generator](docs/mech_generator.md).
+- Typed modular part/slot/rig contracts, scene inspection, portable part libraries
+  and protected component replacement through Python and the Blender sidebar.
+  Persistent recipe components preserve authored rigs; lifetime changes require
+  explicit migration. See [modular assemblies](docs/assembly.md).
+- Opt-in skeletal GLB export preserves existing skins and Actions; named RGBA
+  attributes can be exported independently of material nodes. Validated payloads
+  are published atomically. See [save and export](docs/export.md).
 - English/Russian Blender sidebar: follow Blender's language or override it in
   GameAssetTools preferences. Scene-aware controls and per-asset session drafts
   keep the selected target clear while switching projects and recipes.
@@ -56,16 +65,18 @@ under another account/profile without copying credentials. See
 - BLOCKOUT, REFINE, DETAIL, and FINALIZE stages with approval-gated advancement.
 - Six standard preview views, component isolation, persisted framing, and debug views.
 - Structured inspection, evaluated polygon statistics, and JSON validation reports.
-- Explicit `.blend` save and centralized static GLB export.
+- Explicit `.blend` save and centralized GLB export, static by default.
 - Generic Blender sidebar; headless JSON CLI; repository Codex skill and workflows.
 - Example watchtower, scout mech, and cargo crate recipes plus automated tests.
 
 ## Planned / future
 
-Collision generation, LOD generation, rigging/animation pipelines, animated sprite
-sheets, and an optional live Blender bridge are **not implemented**. Godot project
-import remains unverified. The examples demonstrate the framework and are not
-architectural requirements or final reference-matched art.
+Collision and LOD generation, automatic rig/animation authoring and retargeting,
+animated sprite sheets, and an optional live Blender bridge remain future work.
+Skeletal export requires an authored rig and clips; assembly contracts do not
+certify mechanical clearance or physical joint limits. Godot integration remains
+project-owned. The examples demonstrate the framework and are not architectural
+requirements or final reference-matched art.
 
 ## Requirements
 

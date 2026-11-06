@@ -15,6 +15,7 @@ class ComponentSpec:
     collection: str
     depends_on: tuple[str, ...] = ()
     helper: bool = False
+    persistent: bool = False
 
 
 class AssetRecipe(Protocol):
@@ -62,6 +63,8 @@ def validate_components(components: dict[str, ComponentSpec]) -> None:
             raise ValueError(f"Component {key!r} has duplicate dependencies.")
         if type(spec.helper) is not bool:
             raise ValueError(f"Component {key!r} helper must be a boolean.")
+        if type(spec.persistent) is not bool:
+            raise ValueError(f"Component {key!r} persistent must be a boolean.")
         visiting.add(key)
         for dependency in spec.depends_on:
             visit(dependency)

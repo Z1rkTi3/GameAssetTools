@@ -78,21 +78,47 @@ def plan_build(entry, config, *, rebuild=False, stage=None, components=None, rep
     stage_change = bool(root and stage != root.get("gat_stage"))
     old_config = effective_saved_config(entry, json.loads(root["gat_config"])) if root else None
     all_keys = set(specs) | set(old_records)
-    affected = (changed_components(recipe, old_config, config) | (set(specs) - set(old_records))) if root else set(specs)
+    persistent = {key for key, spec in specs.items() if spec.persistent and key in old_records}
+    # Сохранённый lifetime-контракт нельзя снять новой версией recipe: потеря
+    # флага столь же опасна для авторского Rig/Actions, как удаление компонента.
+    removed_persistent = {key for key, record in old_records.items() if record.get("persistent")
+                          and (key not in specs or not specs[key].persistent)}
+    if removed_persistent:
+        raise ValueError(f"Persistent components require an explicit migration: {', '.join(sorted(removed_persistent))}")
+    # Простое добавление флага в recipe не мигрирует уже существующий record.
+    # Иначе Rig сохранится сейчас, но его lifetime потеряется при следующем recipe.
+    adopted_persistent = {key for key in persistent if not old_records[key].get("persistent")}
+    if adopted_persistent:
+        raise ValueError("Existing components require an explicit migration before becoming persistent: "
+                         + ", ".join(sorted(adopted_persistent)))
+    changed = changed_components(recipe, old_config, config) if root else set()
+    if changed & persistent:
+        raise ValueError(f"Config affects persistent components; edit or migrate them explicitly: {', '.join(sorted(changed & persistent))}")
+    affected = (changed | (set(specs) - set(old_records))) if root else set(specs)
     if root and (stage_change or root.get("gat_recipe_version") != entry.recipe_version
                  or root.get("gat_recipe_digest") != recipe_digest
                  or json.loads(root.get("gat_style", "{}")) != (style or {})):
         affected = all_keys
+    # Стадия/версия recipe уточняет генерируемую геометрию. Постоянный риг уже
+    # содержит авторскую работу и не включается в эту автоматическую замену.
+    affected = affected - persistent
     if components:
         unknown = set(components) - all_keys
         if unknown:
             raise ValueError(f"Unknown components: {', '.join(sorted(unknown))}")
         selected = _closure(specs, components)
+        if selected & persistent:
+            raise ValueError(f"Cannot rebuild persistent components: {', '.join(sorted(selected & persistent))}")
         if affected - selected:
             raise ValueError(f"Config also affects {', '.join(sorted(affected - selected))}; include these components")
     else:
         selected = affected
+    if any(set(specs[key].depends_on) & selected for key in persistent):
+        raise ValueError("A preserved persistent component depends on replaced geometry; migrate its connection explicitly")
     errors = _guard(root, selected, replace_edited=replace_edited, stage_change=stage_change) if root else []
+    for key in sorted(selected):
+        if old_records.get(key, {}).get("library_part"):
+            errors.append(f"Component {key} comes from the part library; replace its library revision instead of regenerating recipe geometry")
     if root and stage_change:
         from .recipe import STAGES
         if STAGES.index(stage) > STAGES.index(root["gat_stage"]) and root.get("gat_stage_status") != "approved":
@@ -134,6 +160,7 @@ def build(entry, config, style, *, rebuild=False, stage=None, components=None,
     before_objects = set(bpy.data.objects)
     before_collections = set(bpy.data.collections)
     before_materials = set(bpy.data.materials)
+    before_actions = set(bpy.data.actions)
     staging = None
     specs = entry.load().components(config)
     try:
@@ -203,6 +230,8 @@ def build(entry, config, style, *, rebuild=False, stage=None, components=None,
                 records[key] = {"status": "editable", "stage": plan["stage"], "collection": specs[key].collection,
                                 "depends_on": list(specs[key].depends_on),
                                 "object_count": sum(o.get("gat_component") == key for o in built)}
+                if specs[key].persistent:
+                    records[key]["persistent"] = True
         root["gat_components"] = encode(records)
         root["gat_config"] = encode(config)
         root["gat_style"] = encode(style)
@@ -222,6 +251,12 @@ def build(entry, config, style, *, rebuild=False, stage=None, components=None,
             _remove_object(obj)
         for collection in set(bpy.data.collections) - before_collections:
             bpy.data.collections.remove(collection)
+        # Удаление временного рига не освобождает клипы с fake user. Убираем
+        # только новые неиспользуемые Actions, чтобы повторная сборка не получила
+        # конфликт имён; прежние пользовательские анимации сохраняются.
+        for action in set(bpy.data.actions) - before_actions:
+            if action.users <= int(action.use_fake_user):
+                bpy.data.actions.remove(action)
         for material in set(bpy.data.materials) - before_materials:
             if material.users == 0:
                 bpy.data.materials.remove(material)

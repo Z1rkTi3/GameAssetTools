@@ -218,6 +218,9 @@ def make_parser() -> argparse.ArgumentParser:
         if action == "save":
             command.add_argument("--view-copy", action="store_true", help="Save a separate framed viewing copy, preserving the working view")
             command.add_argument("--save-view", choices=VIEWS, default="perspective", help="Viewing-copy viewport direction")
+        if action == "export":
+            command.add_argument("--animations", action="store_true", help="Preserve the asset's registered rig, skin and animation actions in GLB (default: static)")
+            command.add_argument("--vertex-color-name", default="", help="Export this named color attribute as COLOR_0 on every mesh (default: Blender's material-driven selection)")
     return parser
 
 
@@ -276,6 +279,9 @@ def main(argv: list[str] | None = None) -> int:
                 request["report_mode"] = args.report_mode
             if args.action == "save":
                 request.update(view_copy=args.view_copy, save_view=args.save_view)
+            if args.action == "export":
+                request["animations"] = args.animations
+                request["vertex_color_name"] = args.vertex_color_name
             response = run_blender(request, find_blender(args.blender))
         print(json.dumps(response, ensure_ascii=True, separators=(",", ":"), allow_nan=False))
         return 1 if response.get("status") in {"error", "failed", "blocked", "invalid"} else 0
