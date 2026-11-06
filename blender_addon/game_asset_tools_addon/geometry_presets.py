@@ -167,4 +167,78 @@ class GAT_PT_geometry_presets(bpy.types.Panel):
             layout.label(text=tr("Approximate mass/support; static design only", context), icon="INFO")
 
 
-CLASSES = (GAT_OT_geometry_import, GAT_OT_geometry_export, GAT_OT_mech_report, GAT_PT_geometry_presets)
+def authoring_tools(recipe):
+    """Небольшой opt-in hook рецепта; JSON не выбирает исполняемую функцию."""
+    provider = getattr(recipe, "authoring_tools", None)
+    values = provider() if callable(provider) else []
+    if not isinstance(values, (list, tuple)):
+        raise ValueError("Recipe authoring_tools must return a list")
+    ids = set()
+    for item in values:
+        if (not isinstance(item, dict) or set(item) != {"id", "label"}
+                or any(not isinstance(v, str) or not v.strip() for v in item.values()) or item["id"] in ids):
+            raise ValueError("Invalid or duplicate recipe authoring tool")
+        ids.add(item["id"])
+    if values and not callable(getattr(recipe, "run_authoring_tool", None)):
+        raise ValueError("Recipe authoring tools require run_authoring_tool")
+    return values
+
+
+class GAT_OT_recipe_tool(LocalizedOperator, bpy.types.Operator):
+    bl_idname = "game_asset_tools.recipe_tool"
+    bl_label = "Recipe Authoring Tool"
+    bl_description = "Run an explicit authoring tool of the current recipe without rebuilding geometry"
+    bl_options = {"REGISTER", "UNDO"}
+    tool: StringProperty()
+
+    @classmethod
+    def poll(cls, context):
+        if not _ready(context): return False
+        settings = context.scene.game_asset_tools
+        return properties.scene_state(settings, context)["root"] is not None
+
+    def execute(self, context):
+        try:
+            settings = context.scene.game_asset_tools
+            recipe = properties.registry(settings).get(settings.asset).load()
+            if self.tool not in {item["id"] for item in authoring_tools(recipe)}:
+                raise ValueError("Unknown authoring tool for the selected recipe")
+            result = recipe.run_authoring_tool(settings.asset, self.tool)
+            if not isinstance(result, dict): raise ValueError("Authoring tool must return a report dictionary")
+            store_report(settings, result)
+            return {"FINISHED"}
+        except (OSError, ValueError, KeyError, TypeError, RuntimeError) as exc:
+            self.report({"ERROR"}, str(exc))
+            return {"CANCELLED"}
+
+
+class GAT_PT_recipe_tools(bpy.types.Panel):
+    bl_label = "Recipe Authoring"
+    bl_idname = "GAT_PT_recipe_tools"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "GameAssetTools"
+    bl_parent_id = "GAT_PT_asset"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    @classmethod
+    def poll(cls, context):
+        if not _ready(context): return False
+        settings = context.scene.game_asset_tools
+        try:
+            return bool(authoring_tools(properties.registry(settings).get(settings.asset).load()))
+        except (ValueError, KeyError, TypeError):
+            return False
+
+    def draw(self, context):
+        settings, layout = context.scene.game_asset_tools, self.layout
+        recipe = properties.registry(settings).get(settings.asset).load()
+        layout.enabled = GAT_OT_recipe_tool.poll(context)
+        draw = getattr(recipe, "draw_authoring_tools", None)
+        if callable(draw): draw(layout, settings.asset)
+        for item in authoring_tools(recipe):
+            layout.operator("game_asset_tools.recipe_tool", text=item["label"]).tool = item["id"]
+
+
+CLASSES = (GAT_OT_geometry_import, GAT_OT_geometry_export, GAT_OT_mech_report, GAT_PT_geometry_presets,
+           GAT_OT_recipe_tool, GAT_PT_recipe_tools)

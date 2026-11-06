@@ -39,6 +39,22 @@ def save_asset(asset_id, output, *, overwrite=False, view_copy=False, view="pers
     return {"asset": asset_id, "status": "saved", "blend": str(path)}
 
 
+def _recipe_export_context(function):
+    """Необязательный reversible hook рецепта; обычный экспорт не меняется."""
+    from functools import wraps
+
+    @wraps(function)
+    def wrapped(asset_id, output, **options):
+        entry = options.get("entry")
+        factory = getattr(entry.load(), "export_context", None) if entry is not None else None
+        if not callable(factory):
+            return function(asset_id, output, **options)
+        with factory(asset_id, animations=options.get("animations", False)):
+            return function(asset_id, output, **options)
+    return wrapped
+
+
+@_recipe_export_context
 def export_asset(asset_id, output, *, entry=None, overwrite=False):
     import bpy
     from game_asset_tools.asset.scene import asset_objects, find_root, root_object
