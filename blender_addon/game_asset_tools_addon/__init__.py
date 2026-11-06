@@ -17,9 +17,9 @@ _source = _here / "bundled" if (_here / "bundled" / "game_asset_tools").is_dir()
 if str(_source) not in sys.path:
     sys.path.insert(0, str(_source))
 
-from . import i18n, operators, panels, properties
+from . import geometry_presets, i18n, operators, panels, properties
 
-_CLASSES = (*i18n.CLASSES, *properties.CLASSES, *operators.CLASSES, *panels.CLASSES)
+_CLASSES = (*i18n.CLASSES, *properties.CLASSES, *operators.CLASSES, *panels.CLASSES, *geometry_presets.CLASSES)
 
 
 def register():

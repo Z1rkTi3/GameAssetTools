@@ -284,6 +284,38 @@ RU.update({
     "delete": "удалить",
 })
 
+# Mech Generator MVP translations: begin
+# Новые подписи не изменяют технические ID, JSON и прежнюю библиотеку компонентов.
+RU.update({
+    "Industrial Walker — Mech Generator MVP": "Промышленный шагоход — Mech Generator MVP",
+    "Hull Length": "Длина корпуса",
+    "Hull Width": "Ширина корпуса",
+    "Hull Height": "Высота корпуса",
+    "Hull Edge Bevel": "Скос кромок корпуса",
+    "Hull Front Taper": "Сужение носовой секции",
+    "Upper Link Length": "Длина бедра",
+    "Lower Link Length": "Длина голени",
+    "Upper Link Thickness": "Толщина бедра",
+    "Lower Link Thickness": "Толщина голени",
+    "Hip Angle Degrees": "Наклон бедра, градусы",
+    "Knee Flexion Degrees": "Сгиб колена, градусы",
+    "Foot Width": "Ширина ступни",
+    "Foot Length": "Длина ступни",
+    "Foot Height": "Высота ступни",
+    "Hull Mount Outset": "Вынос крепления от борта",
+    "Hinge Standard": "Стандарт шарнира",
+    "Mirror Second Leg": "Зеркальная вторая нога",
+    "Geometry Presets": "Пресеты геометрии",
+    "Import Geometry JSON": "Загрузить геометрию JSON",
+    "Export Geometry JSON": "Сохранить геометрию JSON",
+    "Check Mech Geometry": "Проверить конструкцию меха",
+    "Approximate mass/support; static design only": "Масса и опора: приближённая статическая оценка",
+    "Geometry loaded into controls; use Build or Rebuild to apply": "Параметры загружены. Нажмите «Создать» или «Пересобрать»",
+    "Load validated geometry parameters into controls; use Rebuild to change the model": "Загрузить проверенные параметры в поля; модель изменит команда «Пересобрать»",
+    "Save validated geometry settings to a JSON file usable by the CLI": "Сохранить проверенные параметры геометрии в JSON, совместимый с CLI",
+    "Check the current parameter design, mount standards and approximate support; no strength or dynamics simulation": "Проверить параметры, стандарты креплений и приближённую опору; без расчёта прочности и динамики",
+})
+# Mech Generator MVP translations: end
 CATALOGS = {"en_US": {message: message for message in RU}, "ru_RU": RU}
 
 

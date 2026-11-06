@@ -18,7 +18,7 @@ PROJECT = Path(__file__).resolve().parents[1]
 class ContractTests(unittest.TestCase):
     def test_discover_load_all_recipes_without_blender(self):
         registry = Registry(PROJECT)
-        self.assertEqual({e.id for e in registry.list()}, {"watchtower","scout_mech","industrial_crate","rubin_tower"})
+        self.assertEqual({e.id for e in registry.list()}, {"watchtower","scout_mech","industrial_crate","rubin_tower","industrial_walker"})
         for entry in registry.list():
             self.assertEqual(load_config(entry)["asset"],entry.id)
             self.assertIs(entry.load(),entry.load())
