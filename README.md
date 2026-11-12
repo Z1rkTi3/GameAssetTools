@@ -1,4 +1,4 @@
-# GameAssetTools 0.4.0
+# GameAssetTools 0.5.1
 
 [![Python tests](https://github.com/Z1rkTi3/GameAssetTools/actions/workflows/tests.yml/badge.svg)](https://github.com/Z1rkTi3/GameAssetTools/actions/workflows/tests.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -42,7 +42,8 @@ under another account/profile without copying credentials. See
   and protected component replacement through Python and the Blender sidebar.
   Persistent recipe components preserve authored rigs; lifetime changes require
   explicit migration. See [modular assemblies](docs/assembly.md).
-- Opt-in skeletal GLB export preserves existing skins and Actions; named RGBA
+- Opt-in skeletal GLB export verifies channel ownership by indexed node hierarchy,
+  including equal bone names in different rigs. It preserves skins and Actions; named RGBA
   attributes can be exported independently of material nodes. Validated payloads
   are published atomically. See [save and export](docs/export.md).
 - English/Russian Blender sidebar: follow Blender's language or override it in
@@ -82,7 +83,7 @@ requirements or final reference-matched art.
 
 | Use | Requirement |
 |---|---|
-| Blender work | **Blender 5.2.0 LTS is the only verified Blender version.** The add-on declares a 4.2 API minimum; other versions are unverified. |
+| Blender work | **Blender 5.3.0** is verified for 0.5.1, including saved 5.2 materials. Earlier checks used 5.2.0 LTS. The declared 4.2 API minimum and other versions remain unverified. |
 | CLI / development | Python 3.11+; the local release checks used Python 3.13 on Windows. Keep the complete checkout for CLI use. |
 | Blender add-on | Uses Blender's bundled Python; no separate Python installation is needed. |
 | Codex integration | A Codex environment that can read repository skills and run local Python/Blender commands. Codex is optional for manual add-on use. |

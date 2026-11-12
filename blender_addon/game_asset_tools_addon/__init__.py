@@ -5,7 +5,7 @@ import sys
 
 # Blender discovers this literal without importing; packaging checks its version.
 bl_info = {
-    "name": "GameAssetTools", "author": "GameAssetTools contributors", "version": (0, 4, 0),
+    "name": "GameAssetTools", "author": "GameAssetTools contributors", "version": (0, 5, 1),
     "blender": (4, 2, 0), "location": "View3D > Sidebar > GameAssetTools",
     "description": "Discover, build, inspect, preview, validate and export game asset recipes",
     "category": "Object",

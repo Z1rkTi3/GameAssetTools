@@ -76,10 +76,14 @@ def inspect_glb(path):
             if type(target) is not int or not 0 <= target < len(nodes) or type(sampler) is not int or not 0 <= sampler < len(samplers):
                 raise ValueError("GLB animation has an invalid target or sampler")
         animations.append({"name": animation.get("name"), "channels": len(channels),
-                           "targets": sorted({nodes[c["target"]["node"]].get("name", "") for c in channels})})
+                           "targets": sorted({nodes[c["target"]["node"]].get("name", "") for c in channels}),
+                           "target_indices": sorted({c["target"]["node"] for c in channels})})
     return {"bytes": len(blob), "meshes": len(content["meshes"]), "nodes": len(nodes),
             "materials": len(content.get("materials", [])), "node_names": [n.get("name") for n in nodes],
             "node_parents": {nodes[index].get("name"): nodes[parent].get("name") for index, parent in parents.items()},
+            # Старое name-based поле оставлено для отчётов. Для проверки
+            # принадлежности каналов нужны индексы: имена костей могут совпадать.
+            "node_parent_indices": [parents.get(index) for index in range(len(nodes))],
             "skins": len(skins), "joints": sum(s["joints"] for s in skin_details),
             "skin_details": skin_details, "skin_bindings": bindings,
             "animations": len(animations), "animation_names": [a["name"] for a in animations],

@@ -1,6 +1,16 @@
 # Changelog
 
-## Unreleased — modular authoring foundation
+## 0.5.1 — 2026-11-13
+
+- Recognize unchanged Blender 5.2 Principled material fingerprints in Blender 5.3.
+  Compatibility projects only the two new dispersion inputs at exact defaults
+  with no links; geometry, transforms, other material edits and new input edits
+  remain protected. Existing saved signatures are never rewritten automatically.
+- Lifecycle, recolor, validation and material inspection share the same guard.
+- Blender 5.3 regression: 141 Python tests, 187 Blender tests and two rollback
+  scenarios. The source Blender 5.2 fingerprints are retained as compatibility data.
+
+## 0.5.0 — 2026-11-13
 
 - Typed rig/part/slot contracts, real-scene inspection, portable component libraries
   and transactional replacement with preserved neighbours, materials and animation.
@@ -11,6 +21,8 @@
   `replace_edited` cannot bypass this protection.
 - Opt-in skeletal GLB export, verified skins/clips and explicit named RGBA
   attributes. Existing deliveries survive export or validation failures.
+- Animation postflight checks each channel against its Action's owning object
+  or rig, including indexed hierarchy checks for equal bone names in other rigs.
 - Standalone Blender fixtures cover the foundation in addition to the legacy
   workflow suite. Historical external walker drivers remain local research tools.
 

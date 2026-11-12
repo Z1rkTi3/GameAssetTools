@@ -7,7 +7,7 @@ import bpy
 
 from .appearance import validate_material_changes
 from .geometry_state import geometry_state
-from .metadata import encode, fingerprint
+from .metadata import encode, fingerprint, fingerprint_matches
 from .scene import asset_objects, component_records, find_root
 from game_asset_tools.core.materials import _INPUTS
 from game_asset_tools.inspection.materials import material_role, material_usage
@@ -110,7 +110,7 @@ def recolor(asset_id, materials, *, components=None, objects=None, replace_edite
             state = records.get(obj.get("gat_component"), {}).get("status", "editable")
             if state in {"locked", "approved"} or obj.get("gat_status") in {"locked", "approved"}:
                 errors.append(f"Component {obj.get('gat_component')} is {state}; explicitly mark editable first")
-            if obj.get("gat_fingerprint") != fingerprint(obj) and not replace_edited:
+            if not fingerprint_matches(obj) and not replace_edited:
                 errors.append(f"Manual edits detected in {obj.name}; explicitly allow edited content first")
             if any(c not in {root, *root.children_recursive} for c in obj.users_collection):
                 errors.append(f"{obj.name} is linked outside this asset")

@@ -1,6 +1,26 @@
 """Preflight and postflight for explicitly requested skeletal GLB export."""
 
 import math
+from collections import Counter
+
+
+def _bone_path(bone):
+    """Имена компонентов пути сохраняются отдельно, включая возможный '/' в имени."""
+    result = []
+    while bone is not None:
+        result.append(bone.name)
+        bone = bone.parent
+    return tuple(reversed(result))
+
+
+def _object_path(obj):
+    """Путь экспортируемого object учитывает промежуточные кости bone parent."""
+    if obj.parent is None:
+        return (obj.name,)
+    parent = _object_path(obj.parent)
+    if obj.parent_type == "BONE":
+        parent += _bone_path(obj.parent.data.bones[obj.parent_bone])
+    return (*parent, obj.name)
 
 
 def animation_contract(objects):
@@ -27,7 +47,8 @@ def animation_contract(objects):
                     target = getattr(constraint, field, None)
                     if target is not None and target not in owned:
                         raise ValueError(f"Bake external animation control before export: {obj.name}/{owner.name}/{constraint.name}")
-    expected = {"rigs": {}, "bindings": {}, "actions": [], "sockets": {}}
+    expected = {"rigs": {}, "bindings": {}, "actions": [], "sockets": {}, "action_targets": {}}
+    action_targets = {}
     for rig in rigs:
         bones = list(rig.data.bones)
         if not bones:
@@ -78,11 +99,40 @@ def animation_contract(objects):
         for action in actions:
             if action.name not in expected["actions"]:
                 expected["actions"].append(action.name)
+            # Actions mode может запечь все кости armature, даже если исходная
+            # F-Curve меняет одну. Это допустимые адресаты данного владельца,
+            # а не обещание равенства всех кривых или наличия каждого канала.
+            owner_path = _object_path(obj)
+            targets = {owner_path}
+            if obj.type == "ARMATURE":
+                targets.update(owner_path + _bone_path(bone) for bone in obj.data.bones)
+            action_targets.setdefault(action.name, set()).update(targets)
     if not expected["bindings"]:
         raise ValueError("Animated export requires a mesh skinned to the registered armature")
     if not expected["actions"]:
         raise ValueError("Animated export requires an active or stashed action on the registered asset")
+    expected["action_targets"] = {name: [list(path) for path in sorted(paths)]
+                                  for name, paths in action_targets.items()}
     return expected
+
+
+def _node_paths(summary):
+    """Индексная иерархия различает одинаковые имена костей у разных ригов."""
+    names, parents = summary["node_names"], summary.get("node_parent_indices")
+    if not isinstance(parents, list) or len(parents) != len(names):
+        raise ValueError("Animated GLB inspection lacks a complete indexed node hierarchy; rerun inspection")
+    paths = []
+    for index in range(len(names)):
+        path, seen = [], set()
+        current = index
+        while current is not None:
+            if type(current) is not int or not 0 <= current < len(names) or current in seen:
+                raise ValueError("Animated GLB has an invalid indexed node hierarchy")
+            seen.add(current)
+            path.append(names[current])
+            current = parents[current]
+        paths.append(tuple(reversed(path)))
+    return paths
 
 
 def verify_animation_contract(expected, summary):
@@ -113,3 +163,31 @@ def verify_animation_contract(expected, summary):
     unexpected = clips - set(expected["actions"])
     if unexpected:
         raise ValueError("Animated GLB included unrelated action clips: " + ", ".join(sorted(unexpected)))
+    allowed_targets = expected.get("action_targets")
+    if not isinstance(allowed_targets, dict) or set(allowed_targets) != set(expected["actions"]):
+        # Это внутренний preflight, а не сохранённая схема пользовательской сцены.
+        # Старый отчёт без владельцев нельзя считать доказательством нового экспорта.
+        raise ValueError("Animation contract lacks per-action target ownership; rerun preflight")
+    paths = _node_paths(summary)
+    path_counts = Counter(paths)
+    for clip in summary["animation_details"]:
+        if not clip["channels"]:
+            continue
+        indices = clip.get("target_indices")
+        if indices is None:
+            raise ValueError("Animated GLB inspection lacks indexed animation targets; rerun inspection")
+        if not isinstance(indices, list) or not indices or any(
+                type(index) is not int or not 0 <= index < len(paths) for index in indices):
+            raise ValueError(f"Animated GLB has invalid animation target indices: {clip['name']}")
+        declared = allowed_targets[clip["name"]]
+        if not isinstance(declared, list) or not declared or any(
+                not isinstance(path, list) or not path or any(type(name) is not str or not name for name in path)
+                for path in declared):
+            raise ValueError("Animation contract has invalid action target ownership; rerun preflight")
+        allowed = {tuple(path) for path in declared}
+        for index in indices:
+            path = paths[index]
+            if path not in allowed:
+                raise ValueError(f"Animated GLB has an unowned animation target: {clip['name']} -> {path!r}")
+            if path_counts[path] != 1:
+                raise ValueError(f"Animated GLB has an ambiguous animation target: {clip['name']} -> {path!r}")

@@ -1,4 +1,34 @@
-# Version 0.4.0 verification and scope
+# Version 0.5.1 verification and scope
+
+Checks: **2026-11-13**, Windows, Blender **5.3.0** (`02f0899d78e3`), host Python 3.13.
+The source checkout passed 141 Python tests, including 16 target-ownership and 12 material
+compatibility tests; 187 Blender tests in 24 suites plus two rig-rollback
+scenarios passed. Existing
+build, tower, preview, sprites, translations, sidebar, assemblies, persistent rig,
+RGBA and saved-default behavior are included. Render tests succeeded with the
+installed backend; its exact GPU backend was not independently queried.
+
+The old postflight accepts a foreign-object channel and a same-named bone on
+another rig. The new postflight rejects both. A real Blender fixture exports two
+rigs, corrupts a channel in the temporary GLB, and verifies rejection without
+replacing the previous delivery. This proves target ownership, not equality of
+all animation curves.
+
+The 0.5.0 standalone Blender ZIP passed 41 foundation tests and 1137 checks.
+The 0.5.1 package additionally includes the seven material-compatibility fixtures.
+Both final ZIPs require the isolated CLI/manual-UI round trip and installed-file
+verification recorded in the local QA below. Commands, source/package hashes
+and installation evidence are recorded in the ignored
+`output/toolchain_upgrade_20261113/` directory. Installed-package state is checked
+separately from source tests. This release does not change user scenes, Godot
+runtime or canonical models. Saved 5.2 sources require no fingerprint rewriting: only two newly introduced
+Principled inputs at exact default values with no links may be projected to the
+legacy signature. New signatures stay complete. Seven Blender fixtures exercise
+all four guard readers and reject real mesh, transform, material or link edits.
+Physical limits, retargeting, final art, Blender 4.2
+and other OS integration remain unverified.
+
+## Historical version 0.4.0 verification and scope
 
 Release checks: **2026-09-14**, Windows, Blender **5.2.0 LTS**
 (`fbe6228777e7`), host Python **3.13**. Runtime dependencies remain the Python

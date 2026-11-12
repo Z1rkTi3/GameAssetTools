@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+from copy import deepcopy
 
 
 def encode(value) -> str:
@@ -24,7 +25,7 @@ def _rna_values(value):
     return result
 
 
-def fingerprint(obj) -> str:
+def _fingerprint_record(obj):
     """Detect mesh, transform, hierarchy, modifier, and material edits.
 
     This is an edit guard, not a hash of every possible Blender animation system.
@@ -58,7 +59,63 @@ def fingerprint(obj) -> str:
                 for n in mat.node_tree.nodes]
             data["links"] = [(l.from_node.name, l.from_socket.identifier, l.to_node.name, l.to_socket.identifier) for l in mat.node_tree.links]
         record["materials"].append(data)
-    return hashlib.sha256(encode(record).encode()).hexdigest()
+    return record
+
+
+def fingerprint(obj) -> str:
+    """Return the current complete edit signature without legacy normalization."""
+    return hashlib.sha256(encode(_fingerprint_record(obj)).encode()).hexdigest()
+
+
+def _legacy_principled_record(obj, record):
+    """Проекция только двух новых default-входов Blender 5.3 в схему 5.2.
+
+    Не переписывает сохранённую подпись и не принимает изменения параметров.
+    Связанный или нестандартный новый вход требует обычной полной подписи.
+    """
+    defaults = {"Transmission Dispersion Scale": 0.0,
+                "Transmission Dispersion Abbe Number": 20.0}
+    result = deepcopy(record)
+    projected = False
+    for slot_index, slot in enumerate(obj.material_slots):
+        material = slot.material
+        if not material or not material.use_nodes:
+            continue
+        for node_index, node in enumerate(material.node_tree.nodes):
+            if node.bl_idname != "ShaderNodeBsdfPrincipled":
+                continue
+            sockets = [node.inputs.get(name) for name in defaults]
+            if not any(socket is not None for socket in sockets):
+                continue
+            if any(socket is None for socket in sockets):
+                return None
+            values = result["materials"][slot_index]["nodes"][node_index]["values"]
+            for (name, default), socket in zip(defaults.items(), sockets):
+                value = values.get(name)
+                if socket.is_linked or type(value) not in (int, float) or value != default:
+                    return None
+                if type(socket.default_value) not in (int, float) or socket.default_value != default:
+                    return None
+            for name in defaults:
+                del values[name]
+            projected = True
+    return result if projected else None
+
+
+def fingerprint_matches(obj, expected=None) -> bool:
+    """Сверяет полный hash; старый hash допускается лишь при точной default-миграции.
+
+    fingerprint() остаётся независимым полным hash для новых baseline и снимков.
+    Остальные поля старого record, включая links/mesh/modifiers, сравниваются целиком.
+    """
+    expected = obj.get("gat_fingerprint") if expected is None else expected
+    if not isinstance(expected, str):
+        return False
+    record = _fingerprint_record(obj)
+    if hashlib.sha256(encode(record).encode()).hexdigest() == expected:
+        return True
+    legacy = _legacy_principled_record(obj, record)
+    return legacy is not None and hashlib.sha256(encode(legacy).encode()).hexdigest() == expected
 
 
 def tag(obj, asset_id: str, component: str, stage: str, version: int, *, helper=False):

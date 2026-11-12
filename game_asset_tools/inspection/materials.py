@@ -6,7 +6,7 @@ import json
 
 import bpy
 
-from game_asset_tools.asset.metadata import fingerprint
+from game_asset_tools.asset.metadata import fingerprint_matches
 from game_asset_tools.asset.scene import asset_objects, component_records
 from game_asset_tools.style import DEFAULT_MATERIALS
 
@@ -84,7 +84,7 @@ def material_usage(root, objects=None):
         expected = obj.get("gat_fingerprint")
         if owned and expected:
             try:
-                manual = expected != fingerprint(obj)
+                manual = not fingerprint_matches(obj, expected)
             except (TypeError, ValueError, ReferenceError):
                 warnings.append("Could not verify the saved edit fingerprint")
             if manual:

@@ -4,6 +4,7 @@ import hashlib
 import json
 from pathlib import Path
 import shutil
+import struct
 import sys
 import unittest
 from unittest.mock import patch
@@ -122,7 +123,8 @@ class AnimatedExportTests(unittest.TestCase):
         from game_asset_tools.export import inspect_glb
         socket = "rig_fixture_Links_TipSocket"
         for damage, message in [("clips", "lost action clips"), ("skin", "lost skin/weights"),
-                                ("joints", "lost joints"), ("socket", "lost socket parent")]:
+                                ("joints", "lost joints"), ("socket", "lost socket parent"),
+                                ("target", "unowned animation target")]:
             with self.subTest(damage=damage):
                 def damaged_payload(candidate):
                     summary = inspect_glb(candidate)
@@ -132,12 +134,90 @@ class AnimatedExportTests(unittest.TestCase):
                         summary["skin_bindings"] = []
                     elif damage == "joints":
                         summary["skin_details"][0]["joint_names"] = ["Base"]
-                    else:
+                    elif damage == "socket":
                         summary["node_parents"][socket] = "Base"
+                    else:
+                        summary["animation_details"][0]["target_indices"] = [summary["node_names"].index(self.mesh.name)]
                     return summary
                 with patch("game_asset_tools.export.inspect_glb", side_effect=damaged_payload):
                     with self.assertRaisesRegex(ValueError, message):
                         export_asset(self.entry.id, OUTPUT / "preserved", entry=self.entry, animations=True, overwrite=True)
+                self.assertEqual(path.read_bytes(), previous)
+                self.assertFalse(list(path.parent.glob(".rig_fixture_*.glb")))
+
+    def test_two_rigs_keep_action_ownership_and_reject_real_channel_retarget(self):
+        # Повторяющиеся Base/Hinge у двух ригов разрешены. Подмена только индекса
+        # target в настоящем временном GLB не должна пройти проверку по имени.
+        from game_asset_tools.asset import ComponentSpec
+        from game_asset_tools.export import inspect_glb
+
+        base_recipe = self.entry.load()
+
+        class TwinContext:
+            def __init__(self, context):
+                self.context = context
+
+            def __getattr__(self, name):
+                return getattr(self.context, name)
+
+            def get(self, component, local_name):
+                return self.context.get("TwinRig" if component == "Rig" else component, local_name)
+
+        class TwoRigRecipe:
+            parameters = base_recipe.parameters
+
+            def components(self, config):
+                return {**base_recipe.components(config), "TwinRig": ComponentSpec("Structure"),
+                        "TwinLinks": ComponentSpec("Structure", depends_on=("TwinRig",))}
+
+            def build_component(self, context, key, config):
+                if key == "TwinRig":
+                    before = set(bpy.data.actions)
+                    base_recipe.build_component(context, "Rig", config)
+                    for action in set(bpy.data.actions) - before:
+                        action.name = "twin_" + action.name.split(".")[0]
+                elif key == "TwinLinks":
+                    base_recipe.build_component(TwinContext(context), "Links", config)
+                else:
+                    base_recipe.build_component(context, key, config)
+
+        bpy.ops.wm.read_factory_settings(use_empty=True)
+        self.entry._recipe = TwoRigRecipe()
+        build(self.entry, load_config(self.entry), load_style(FIXTURE))
+        result = export_asset(self.entry.id, OUTPUT / "two_rigs", entry=self.entry, animations=True, overwrite=True)
+        self.assertEqual(result["structure"]["skins"], 2)
+        self.assertEqual(result["structure"]["node_names"].count("Hinge"), 2)
+        self.assertEqual(set(result["structure"]["animation_names"]), {"swing", "fold", "twin_swing", "twin_fold"})
+        path = Path(result["glb"])
+        previous = path.read_bytes()
+        for damage in ("foreign", "other_rig_same_bone_name"):
+            with self.subTest(damage=damage):
+                def damaged_payload(candidate):
+                    blob = Path(candidate).read_bytes()
+                    json_size = struct.unpack_from("<I", blob, 12)[0]
+                    document = json.loads(blob[20:20 + json_size])
+                    nodes = document["nodes"]
+                    if damage == "foreign":
+                        target = len(nodes)
+                        nodes.append({"name": "ForeignTarget"})
+                        asset_root = next(node for node in nodes if node.get("name") == "rig_fixture_Root")
+                        asset_root.setdefault("children", []).append(target)
+                    else:
+                        twin = next(animation for animation in document["animations"] if animation["name"] == "twin_swing")
+                        target = next(channel["target"]["node"] for channel in twin["channels"]
+                                      if nodes[channel["target"]["node"]]["name"] == "Hinge")
+                    own = next(animation for animation in document["animations"] if animation["name"] == "swing")
+                    own["channels"][0]["target"]["node"] = target
+                    payload = json.dumps(document).encode("utf-8")
+                    payload += b" " * (-len(payload) % 4)
+                    tail = blob[20 + json_size:]
+                    damaged = struct.pack("<4sIII4s", b"glTF", 2, 20 + len(payload) + len(tail), len(payload), b"JSON")
+                    Path(candidate).write_bytes(damaged + payload + tail)
+                    return inspect_glb(candidate)
+
+                with patch("game_asset_tools.export.inspect_glb", side_effect=damaged_payload):
+                    with self.assertRaisesRegex(ValueError, "unowned animation target"):
+                        export_asset(self.entry.id, OUTPUT / "two_rigs", entry=self.entry, animations=True, overwrite=True)
                 self.assertEqual(path.read_bytes(), previous)
                 self.assertFalse(list(path.parent.glob(".rig_fixture_*.glb")))
 

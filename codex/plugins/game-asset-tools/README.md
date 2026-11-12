@@ -4,12 +4,12 @@ Installable local Codex plugin with the shared GameAssetTools Core, recipes,
 previews, validation, GLB export and toon sprite atlases. Includes Rubin Tower:
 a large red ruby and four symmetric supports. No external service login or API key.
 
-Requires Codex desktop/CLI, Python 3.11+ and local Blender. Blender 5.2 LTS is the
-verified version. Blender's bundled Python can serve as the host Python.
+Requires Codex desktop/CLI, Python 3.11+ and local Blender. Blender 5.3.0 is the current
+verified version; historical checks used 5.2.0 LTS. Blender's bundled Python can serve as the host Python.
 
 ## Install on another account or computer
 
-Extract `game_asset_tools_codex_0.4.0.zip` and run inside its `game-asset-tools` folder:
+Extract `game_asset_tools_codex_0.5.1.zip` and run inside its `game-asset-tools` folder:
 
 ```powershell
 python install_codex_plugin.py
@@ -54,5 +54,6 @@ From the GameAssetTools repository, run `python scripts/package_codex_plugin.py`
 Bundled Core is generated directly from the shared source at packaging time; it
 is not a separately maintained implementation. Generated artifacts and personal
 installation directories stay out of Git. Changes to the local plugin must be
-repackaged and reinstalled; use the plugin-creator cachebuster workflow for local
-iterations with an already installed version.
+repackaged and reinstalled. Increment the package version, build both ZIPs from
+the same source, then run the packaged installer with --overwrite. The installer
+uses codex plugin add; do not edit installed cache files manually.

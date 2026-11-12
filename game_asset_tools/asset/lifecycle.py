@@ -9,7 +9,7 @@ import bpy
 from game_asset_tools import __version__
 from game_asset_tools.core.naming import semantic_name
 from .context import BuildContext
-from .metadata import encode, fingerprint
+from .metadata import encode, fingerprint, fingerprint_matches
 from .parameters import changed_components, effective_saved_config, validate_config
 from .recipe import validate_components, validate_stage
 from .scene import asset_objects, component_records, find_root, root_object
@@ -48,7 +48,7 @@ def _guard(root, selected, *, replace_edited=False, stage_change=False):
         if status == "locked" or (status == "approved" and not stage_change):
             errors.append(f"Component {key} is {status}; explicitly mark editable first")
     for obj in replacing:
-        if obj.get("gat_fingerprint") != fingerprint(obj) and not replace_edited:
+        if not fingerprint_matches(obj) and not replace_edited:
             errors.append(f"Manual edits detected in {obj.name}; lock it or explicitly replace edited geometry")
         for child in obj.children:
             if child not in replacing:

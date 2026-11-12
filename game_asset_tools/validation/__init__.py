@@ -6,7 +6,7 @@ import re
 
 import bpy
 
-from game_asset_tools.asset.metadata import fingerprint
+from game_asset_tools.asset.metadata import fingerprint_matches
 from game_asset_tools.asset.parameters import effective_saved_config
 from game_asset_tools.asset.recipe import validate_stage
 from game_asset_tools.asset.scene import asset_objects, component_records, find_root, root_object
@@ -86,7 +86,7 @@ def validate_asset(asset_id, entry=None):
         for modifier in obj.modifiers:
             if modifier.type == "BOOLEAN" and modifier.operand_type == "OBJECT" and modifier.object is None:
                 errors.append(f"Boolean has no operand: {obj.name}/{modifier.name}")
-        if obj.get("gat_fingerprint") != fingerprint(obj):
+        if not fingerprint_matches(obj):
             warnings.append(f"Manual edits since generation: {obj.name}")
     stats = statistics(objects)
     return {"asset": asset_id, "stage": root.get("gat_stage"), "status": "error" if errors else "warning" if warnings else "pass",
