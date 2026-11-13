@@ -1,7 +1,6 @@
 """Component-scoped build planning and guarded replacement of owned geometry."""
 
 import json
-import hashlib
 import logging
 
 import bpy
@@ -58,8 +57,19 @@ def _guard(root, selected, *, replace_edited=False, stage_change=False):
     return errors
 
 
-def plan_build(entry, config, *, rebuild=False, stage=None, components=None, replace_edited=False, style=None):
-    """Return exact affected components and blockers before any scene mutation."""
+def _check_source_digest(entry, expected):
+    """Изменённые/удалённые исходники отклоняются до замены прежних объектов."""
+    try:
+        current = entry.source_digest()
+    except (OSError, ValueError) as exc:
+        raise ValueError("Recipe sources changed during build; save them and retry.") from exc
+    if current != expected:
+        raise ValueError("Recipe sources changed during build; save them and retry.")
+
+
+def _prepare_build(entry, config, *, rebuild=False, stage=None, components=None, replace_edited=False, style=None):
+    """Закрепляет recipe/digest и план на всю транзакцию, без изменения сцены."""
+    recipe_digest = entry.source_digest()
     if rebuild:
         config = effective_saved_config(entry, config)
     else:
@@ -74,7 +84,6 @@ def plan_build(entry, config, *, rebuild=False, stage=None, components=None, rep
         raise ValueError(f"Asset {entry.id!r} already exists; use rebuild")
     stage = validate_stage(stage or (root.get("gat_stage") if root else "BLOCKOUT"), entry.supported_stages)
     old_records = component_records(root) if root else {}
-    recipe_digest = hashlib.sha256((entry.path / "asset.py").read_bytes()).hexdigest()
     stage_change = bool(root and stage != root.get("gat_stage"))
     old_config = effective_saved_config(entry, json.loads(root["gat_config"])) if root else None
     all_keys = set(specs) | set(old_records)
@@ -123,9 +132,17 @@ def plan_build(entry, config, *, rebuild=False, stage=None, components=None, rep
         from .recipe import STAGES
         if STAGES.index(stage) > STAGES.index(root["gat_stage"]) and root.get("gat_stage_status") != "approved":
             errors.append("Approve the current stage before advancing to refinement/detail/finalization")
-    return {"asset": entry.id, "status": "blocked" if errors else "planned", "stage": stage,
+    _check_source_digest(entry, recipe_digest)
+    plan = {"asset": entry.id, "status": "blocked" if errors else "planned", "stage": stage,
             "stage_change": stage_change, "components": sorted(selected),
             "preserved": sorted(all_keys - selected), "errors": errors}
+    return plan, recipe, config, specs, recipe_digest
+
+
+def plan_build(entry, config, *, rebuild=False, stage=None, components=None, replace_edited=False, style=None):
+    """Return exact affected components and blockers before any scene mutation."""
+    return _prepare_build(entry, config, rebuild=rebuild, stage=stage, components=components,
+                          replace_edited=replace_edited, style=style)[0]
 
 
 def _remove_object(obj):
@@ -142,10 +159,9 @@ def _remove_object(obj):
 def build(entry, config, style, *, rebuild=False, stage=None, components=None,
           replace_edited=False, dry_run=False):
     """Stage affected geometry before replacing objects; preserve unrelated data."""
-    if rebuild:
-        config = effective_saved_config(entry, config)
-    plan = plan_build(entry, config, rebuild=rebuild, stage=stage, components=components,
-                      replace_edited=replace_edited, style=style)
+    plan, recipe, config, specs, recipe_digest = _prepare_build(
+        entry, config, rebuild=rebuild, stage=stage, components=components,
+        replace_edited=replace_edited, style=style)
     if dry_run:
         return plan
     if plan["errors"]:
@@ -162,7 +178,6 @@ def build(entry, config, style, *, rebuild=False, stage=None, components=None,
     before_materials = set(bpy.data.materials)
     before_actions = set(bpy.data.actions)
     staging = None
-    specs = entry.load().components(config)
     try:
         if root is None:
             root = bpy.data.collections.new(semantic_name("ASSET", entry.id))
@@ -185,7 +200,7 @@ def build(entry, config, style, *, rebuild=False, stage=None, components=None,
         for key in _ordered(specs):
             if key in selected:
                 ctx = BuildContext(entry, plan["stage"], style, pivot, staging, key, specs[key], lookup, "GAT_Stage_")
-                entry.load().build_component(ctx, key, config)
+                recipe.build_component(ctx, key, config)
         built = list(staging.objects)
         if config.get("appearance"):
             from .recolor import apply_appearance
@@ -201,6 +216,9 @@ def build(entry, config, style, *, rebuild=False, stage=None, components=None,
             existing = bpy.data.objects.get(name)
             if existing and existing not in replacing:
                 raise ValueError(f"Object name {name!r} belongs to preserved content")
+        # Один recipe строит все компоненты. Проверяем общий snapshot до commit,
+        # пока исключение ещё позволяет убрать staging и сохранить старую сцену.
+        _check_source_digest(entry, recipe_digest)
         # No scene deletions before the complete replacement has been constructed.
         for obj in replacing:
             _remove_object(obj)
@@ -236,7 +254,7 @@ def build(entry, config, style, *, rebuild=False, stage=None, components=None,
         root["gat_config"] = encode(config)
         root["gat_style"] = encode(style)
         root["gat_recipe_version"] = entry.recipe_version
-        root["gat_recipe_digest"] = hashlib.sha256((entry.path / "asset.py").read_bytes()).hexdigest()
+        root["gat_recipe_digest"] = recipe_digest
         root["gat_version"] = __version__
         root["gat_stage"] = plan["stage"]
         root["gat_stage_status"] = "editable"

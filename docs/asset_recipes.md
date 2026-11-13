@@ -22,6 +22,34 @@ Unknown parameter paths, wrong types, nonfinite values, and out-of-range numbers
 are rejected before mutation. Defaults → optional config overlay → dotted CLI
 overrides are merged. Rebuild begins with the saved successful config.
 
+Recipes that share Python helpers or read geometry profiles can opt in to
+`metadata.json` `source_files`, a nonempty list of canonical **project-relative**
+POSIX file paths, for example:
+
+```json
+"source_files": [
+  "game_assets/weapons/industrial_weapon.py",
+  "game_assets/weapons/industrial_biped.rig.json"
+]
+```
+
+`asset.py` is always included automatically; do not repeat it in the list. Missing
+files, directories, duplicate names or resolved targets, absolute paths, backslashes,
+`.`/`..` path segments, and symlinks escaping the project are rejected. The digest
+uses sorted relative names and file bytes, so it is independent of the checkout
+location and list order. A changed declared helper/profile invalidates normal
+rebuilds and geometry UI drafts; persistent components retain their existing
+protection. Recipes without `source_files` keep the original SHA256 of `asset.py`,
+so adding this feature does not invalidate older saved builds.
+
+An opted-in `RecipeEntry` reloads its recipe when these bytes change, executing
+`asset.py` directly rather than trusting timestamp-based bytecode caches. A shared
+Python helper must likewise be loaded under a content-addressed module name or
+otherwise execute its current bytes; ordinary `import helper` can retain the old
+module in Python's global cache. The bundled weapon recipes demonstrate the
+content-addressed approach. Refresh recipe discovery after editing the dependency
+list itself; config and style files retain their existing separate change tracking.
+
 An `asset.py` exports `RECIPE = Recipe()`; importing it should not import Blender
 until geometry is actually built:
 

@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "id": "industrial_biped",
+  "revision": 1,
+  "coordinates": {"units": "m", "up": "+Z", "forward": "-Y"},
+  "bones": [
+    {"id": "Root", "parent": null, "rest": {"origin": [0, 0, 0], "basis": [[1,0,0],[0,1,0],[0,0,1]]}},
+    {"id": "Chassis", "parent": "Root", "rest": {"origin": [0, 0, 1.95], "basis": [[1,0,0],[0,1,0],[0,0,1]]}},
+    {"id": "LeftHip", "parent": "Chassis", "rest": {"origin": [-0.67, 0, 1.90], "basis": [[1,0,0],[0,1,0],[0,0,1]]}},
+    {"id": "LeftUpperLeg", "parent": "LeftHip", "rest": {"origin": [-0.67, 0, 1.90], "basis": [[1,0,0],[0,1,0],[0,0,1]]}},
+    {"id": "LeftKnee", "parent": "LeftUpperLeg", "rest": {"origin": [-0.67, 0.38, 1.10], "basis": [[1,0,0],[0,1,0],[0,0,1]]}},
+    {"id": "LeftLowerLeg", "parent": "LeftKnee", "rest": {"origin": [-0.67, 0.38, 1.10], "basis": [[1,0,0],[0,1,0],[0,0,1]]}},
+    {"id": "LeftAnkle", "parent": "LeftLowerLeg", "rest": {"origin": [-0.67, -0.12, 0.32], "basis": [[1,0,0],[0,1,0],[0,0,1]]}},
+    {"id": "LeftFoot", "parent": "LeftAnkle", "rest": {"origin": [-0.67, -0.12, 0.32], "basis": [[1,0,0],[0,1,0],[0,0,1]]}},
+    {"id": "RightHip", "parent": "Chassis", "rest": {"origin": [0.67, 0, 1.90], "basis": [[1,0,0],[0,1,0],[0,0,1]]}},
+    {"id": "RightUpperLeg", "parent": "RightHip", "rest": {"origin": [0.67, 0, 1.90], "basis": [[1,0,0],[0,1,0],[0,0,1]]}},
+    {"id": "RightKnee", "parent": "RightUpperLeg", "rest": {"origin": [0.67, 0.38, 1.10], "basis": [[1,0,0],[0,1,0],[0,0,1]]}},
+    {"id": "RightLowerLeg", "parent": "RightKnee", "rest": {"origin": [0.67, 0.38, 1.10], "basis": [[1,0,0],[0,1,0],[0,0,1]]}},
+    {"id": "RightAnkle", "parent": "RightLowerLeg", "rest": {"origin": [0.67, -0.12, 0.32], "basis": [[1,0,0],[0,1,0],[0,0,1]]}},
+    {"id": "RightFoot", "parent": "RightAnkle", "rest": {"origin": [0.67, -0.12, 0.32], "basis": [[1,0,0],[0,1,0],[0,0,1]]}},
+    {"id": "WeaponMountLeft", "parent": "Chassis", "rest": {"origin": [-1.13, -0.1, 2.5], "basis": [[1,0,0],[0,1,0],[0,0,1]]}},
+    {"id": "WeaponMountRight", "parent": "Chassis", "rest": {"origin": [1.13, -0.1, 2.5], "basis": [[1,0,0],[0,1,0],[0,0,1]]}}
+  ],
+  "joints": []
+}

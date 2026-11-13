@@ -2,7 +2,7 @@
 
 ## Installed plugin (any local project)
 
-Build `output/game_asset_tools_codex_0.4.0.zip` with
+Build `output/game_asset_tools_codex_0.5.2.zip` with
 `python scripts/package_codex_plugin.py`. Extract it and run
 `python game-asset-tools/install_codex_plugin.py`. This installs and enables
 `game-asset-tools` in the personal Codex marketplace. Start a new task to load the

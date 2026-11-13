@@ -182,7 +182,7 @@ def _geometry_source(settings, entry, scene_values=True):
         config = load_config(entry)
     # Sprite-only edits must not invalidate geometry drafts.
     data = {"parameters": config["parameters"], "stage": stage,
-            "recipe": hashlib.sha256((entry.path / "asset.py").read_bytes()).hexdigest()}
+            "recipe": entry.source_digest()}
     revision = hashlib.sha256(json.dumps(data, sort_keys=True).encode()).hexdigest()
     return config, stage, revision
 
@@ -229,7 +229,10 @@ def geometry_updates(settings, *, check_revision=False):
 
 def geometry_dirty(settings):
     source = session.geometry_sources.get(session.scene_id(settings))
-    return bool(source and (parameter_updates(settings.parameters) or settings.stage != source["stage"]))
+    # Stage RNA запрашивает items через asset/category. Во время смены project
+    # их numeric indices ещё старые; сам ID этапа уже принадлежит session.
+    stage = session.stages.get(session.scene_id(settings), "BLOCKOUT")
+    return bool(source and (parameter_updates(settings.parameters) or stage != source["stage"]))
 
 
 def sprite_dirty(settings):
@@ -259,7 +262,8 @@ def stash_drafts(settings):
         return
     draft = session.drafts.setdefault(key, {})
     if geometry_dirty(settings):
-        draft["geometry"] = {"items": _snapshot(settings.parameters), "stage": settings.stage,
+        draft["geometry"] = {"items": _snapshot(settings.parameters),
+                             "stage": session.stages.get(session.scene_id(settings), "BLOCKOUT"),
                              "source": dict(session.geometry_sources[session.scene_id(settings)])}
     else:
         draft.pop("geometry", None)
@@ -408,7 +412,15 @@ def refresh_selection(settings, context=None, *, project_changed=False, opening=
     clear_cache()
     categories = category_items(settings, context)
     remembered = session.selection.get((session.scene_id(settings), str(project_root(settings))))
-    category, asset = remembered if project_changed and remembered else (settings.category, settings.asset)
+    if project_changed:
+        # RNA уже видит НОВЫЙ project: старый numeric index категории может
+        # отсутствовать или означать другой ID. Берём сохранённые строки прежнего
+        # выбора; getter enum безопасен лишь после установки новой категории.
+        previous_key = session.active.get(session.scene_id(settings))
+        previous = session.selection.get(previous_key[:2]) if previous_key else None
+        category, asset = remembered or previous or ("", EMPTY)
+    else:
+        category, asset = settings.category, settings.asset
     entries = []
     try:
         entries = registry(settings).list()

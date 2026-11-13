@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.5.2 — 2026-11-13
+
+- Independent industrial cannon/emitter BLOCKOUT recipes share a fixed Rig16 and
+  measured IN/OUT interfaces. The delivery driver exports both mounting sides
+  with manifests for a project-owned Godot adapter; final art remains separate.
+- Opt-in `metadata.source_files` tracks shared recipe/profile changes in build
+  plans and Blender geometry drafts. A single source snapshot is used per build;
+  changed or missing sources reject staging before replacing prior geometry.
+- The portable Codex distribution includes the weapon delivery driver, both
+  recipes and their shared source/profile files. Verification belongs to the
+  exact candidate packages and is recorded separately from this change list.
+
 ## 0.5.1 — 2026-11-13
 
 - Recognize unchanged Blender 5.2 Principled material fingerprints in Blender 5.3.

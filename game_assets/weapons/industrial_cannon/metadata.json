@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "id": "industrial_cannon",
+  "display_name": "Industrial Cannon Payload",
+  "category": "weapons",
+  "recipe_version": 1,
+  "supported_stages": ["BLOCKOUT"],
+  "source_files": [
+    "game_assets/weapons/industrial_weapon.py",
+    "game_assets/weapons/industrial_biped.rig.json"
+  ]
+}

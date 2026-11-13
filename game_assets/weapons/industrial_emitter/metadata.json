@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "id": "industrial_emitter",
+  "display_name": "Industrial Emitter Payload",
+  "category": "weapons",
+  "recipe_version": 1,
+  "supported_stages": ["BLOCKOUT"],
+  "source_files": [
+    "game_assets/weapons/industrial_weapon.py",
+    "game_assets/weapons/industrial_biped.rig.json"
+  ]
+}

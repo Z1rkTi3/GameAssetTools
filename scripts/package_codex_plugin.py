@@ -71,6 +71,7 @@ def _members(project: Path) -> list[tuple[str, bytes]]:
         Path("game_asset_tools/operations.py"),
         Path("game_asset_tools/i18n.py"),
         Path("scripts/blender_command.py"),
+        Path("scripts/export_industrial_weapons.py"),
         Path("game_style.json"), Path("AGENTS.md"), Path("LICENSE"),
         Path("docs/asset_recipes.md"),
     )
@@ -88,7 +89,8 @@ def _members(project: Path) -> list[tuple[str, bytes]]:
                              ("docs", {".md"}), ("codex/workflows", {".md"})):
         sources.extend((path, f"bundled/{folder}/{relative}")
                        for path, relative in _files(project / folder, suffixes))
-    for relative in ("scripts/blender_command.py", "game_style.json", "AGENTS.md", "LICENSE"):
+    for relative in ("scripts/blender_command.py", "scripts/export_industrial_weapons.py",
+                     "game_style.json", "AGENTS.md", "LICENSE"):
         sources.append((project / relative, f"bundled/{relative}"))
 
     # Validate every source before opening the destination, including replacement builds.

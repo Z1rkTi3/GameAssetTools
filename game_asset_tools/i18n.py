@@ -340,6 +340,15 @@ RU.update({
     "Check the current parameter design, mount standards and approximate support; no strength or dynamics simulation": "Проверить параметры, стандарты креплений и приближённую опору; без расчёта прочности и динамики",
 })
 # Mech Generator MVP translations: end
+RU.update({
+    "Industrial Cannon Payload": "Промышленный пушечный модуль",
+    "Industrial Emitter Payload": "Промышленный излучатель",
+    "Payload Side": "Борт крепления",
+    "Barrel / Emitter Length": "Длина ствола / излучателя",
+    "Receiver Width": "Ширина корпуса оружия",
+    "Receiver Height": "Высота корпуса оружия",
+    "Check and Register IN/OUT": "Проверить и зарегистрировать IN/OUT",
+})
 CATALOGS = {"en_US": {message: message for message in RU}, "ru_RU": RU}
 
 

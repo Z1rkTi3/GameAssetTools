@@ -1,6 +1,6 @@
 # Blender add-on
 
-Build the installable `game_asset_tools_blender_0.4.0.zip` from the project root:
+Build the installable `game_asset_tools_blender_0.5.2.zip` from the project root:
 
 ```powershell
 python scripts/package_addon.py

@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "asset": "industrial_emitter",
+  "parameters": {
+    "payload": {"side": "left", "length": 0.65},
+    "receiver": {"width": 0.38, "height": 0.34}
+  }
+}

@@ -237,7 +237,7 @@ class GAT_PT_recipe_tools(bpy.types.Panel):
         draw = getattr(recipe, "draw_authoring_tools", None)
         if callable(draw): draw(layout, settings.asset)
         for item in authoring_tools(recipe):
-            layout.operator("game_asset_tools.recipe_tool", text=item["label"]).tool = item["id"]
+            layout.operator("game_asset_tools.recipe_tool", text=tr(item["label"], context)).tool = item["id"]
 
 
 CLASSES = (GAT_OT_geometry_import, GAT_OT_geometry_export, GAT_OT_mech_report, GAT_PT_geometry_presets,

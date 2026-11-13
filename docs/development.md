@@ -63,7 +63,7 @@ Run the checks above, update [verification results](verification.md), then build
 ```sh
 python scripts/package_addon.py --overwrite
 python scripts/package_codex_plugin.py --overwrite
-python tests/run_release_candidate_smoke.py --addon-zip output/game_asset_tools_blender_0.5.1.zip --codex-zip output/game_asset_tools_codex_0.5.1.zip --blender blender --output output/release_candidate_0_5
+python tests/run_release_candidate_smoke.py --addon-zip output/game_asset_tools_blender_0.5.2.zip --codex-zip output/game_asset_tools_codex_0.5.2.zip --blender blender --output output/release_candidate_0_5_2
 ```
 
 The candidate test checks archive/source equality, isolated imports, real CLI and

@@ -24,6 +24,7 @@ def copy_sources(destination: Path) -> Path:
         shutil.copytree(PROJECT / relative, destination / relative,
                         ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
     for relative in ("codex/install_codex_plugin.py", "scripts/blender_command.py",
+                     "scripts/export_industrial_weapons.py",
                      "game_style.json", "AGENTS.md", "LICENSE"):
         path = destination / relative
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -47,6 +48,7 @@ class CodexPackagingTests(unittest.TestCase):
                 self.assertTrue(all(name.startswith(PREFIX) for name in names))
                 for required in (".codex-plugin/plugin.json", "scripts/gat.py", "README.md",
                                  "install_codex_plugin.py", "bundled/scripts/blender_command.py",
+                                 "bundled/scripts/export_industrial_weapons.py",
                                  "bundled/game_style.json", "bundled/AGENTS.md", "bundled/LICENSE",
                                  "bundled/game_asset_tools/i18n.py",
                                  "bundled/docs/asset_recipes.md", "bundled/codex/workflows/create_asset.md"):
@@ -57,11 +59,18 @@ class CodexPackagingTests(unittest.TestCase):
                     name = PREFIX + "bundled/" + path.relative_to(PROJECT).as_posix()
                     self.assertEqual(archive.read(name), path.read_bytes(), name)
                 for asset in ("buildings/watchtower", "mechs/scout_mech", "props/industrial_crate",
-                              "towers/rubin_tower"):
+                              "towers/rubin_tower", "weapons/industrial_cannon", "weapons/industrial_emitter"):
                     for filename in ("asset.py", "metadata.json", "config.json"):
                         relative = f"game_assets/{asset}/{filename}"
                         self.assertEqual(archive.read(PREFIX + "bundled/" + relative),
                                          (PROJECT / relative).read_bytes())
+                # Отдельная поставка требует настоящий driver и обе общие
+                # зависимости, а не только обнаруживаемые metadata рецептов.
+                for relative in ("scripts/export_industrial_weapons.py",
+                                 "game_assets/weapons/industrial_weapon.py",
+                                 "game_assets/weapons/industrial_biped.rig.json"):
+                    self.assertEqual(archive.read(PREFIX + "bundled/" + relative),
+                                     (PROJECT / relative).read_bytes())
                 self.assertIn(PREFIX + "bundled/game_assets/towers/rubin_tower/README.md", names)
                 for name in names:
                     content = archive.read(name)
@@ -108,6 +117,7 @@ class CodexPackagingTests(unittest.TestCase):
             ("missing runtime", "game_asset_tools/cli.py", None),
             ("missing locale catalog", "game_asset_tools/i18n.py", None),
             ("missing Blender adapter", "scripts/blender_command.py", None),
+            ("missing weapon delivery driver", "scripts/export_industrial_weapons.py", None),
             ("missing installer", "codex/install_codex_plugin.py", None),
             ("missing recipe config", "game_assets/towers/rubin_tower/config.json", None),
             ("invalid style", "game_style.json", b"{invalid"),
