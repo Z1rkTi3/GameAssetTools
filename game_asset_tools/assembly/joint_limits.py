@@ -294,6 +294,11 @@ def inspect_joint_limits(armature, *, owner_id):
     return {"status": "valid", "owner_id": owner_id, "profile": record["profile"], "ik_bones": record["ik_bones"], "issues": []}
 
 
+def _remove_owned_constraint(pb, constraint):
+    """Узкая native операция: fixture может проверить отказ после реального удаления."""
+    pb.constraints.remove(constraint)
+
+
 def remove_joint_limits(armature, *, owner_id):
     """Возвращает прежние IK fields и удаляет только собственные pristine constraints."""
     _armature(armature)
@@ -302,18 +307,19 @@ def remove_joint_limits(armature, *, owner_id):
     if record is None: return {"status": "unchanged", "owner_id": owner_id}
     managed = _pristine(armature, record)
     raw_record = armature[RECORD]
-    removed = []
     try:
         for bone, values in record["previous_ik"].items(): _write_fields(armature.pose.bones[bone], values)
         del armature[RECORD]
         for bone, constraint in managed.items():
-            armature.pose.bones[bone].constraints.remove(constraint)
-            removed.append(bone)
+            _remove_owned_constraint(armature.pose.bones[bone], constraint)
     except BaseException:
-        for bone in removed:
-            constraint = armature.pose.bones[bone].constraints.new("LIMIT_ROTATION")
-            constraint.name = record["constraints"][bone]["name"]
-            _restore_fields(constraint, record["constraints"][bone]["last"])
+        # Проверяем фактически оставшиеся RNA, а не только завершённые итерации:
+        # исключение возможно и после уже выполненного native удаления.
+        for bone, definition in record["constraints"].items():
+            if armature.pose.bones[bone].constraints.get(definition["name"]) is None:
+                constraint = armature.pose.bones[bone].constraints.new("LIMIT_ROTATION")
+                constraint.name = definition["name"]
+                _restore_fields(constraint, definition["last"])
         for bone, values in record["last_ik"].items(): _restore_fields(armature.pose.bones[bone], values)
         armature[RECORD] = raw_record
         raise

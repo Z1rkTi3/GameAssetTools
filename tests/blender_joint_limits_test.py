@@ -118,19 +118,20 @@ class NativeJointLimitsTests(unittest.TestCase):
         # FK constraint тоже может обрезать результат решателя. Отключаем его,
         # чтобы этот тест доказывал работу именно native IK fields, а не clamp
         # после решения IK с уже недостижимым конечным положением цепи.
-        for pb in self.obj.pose.bones:
-            for constraint in pb.constraints:
-                if constraint.type == "LIMIT_ROTATION": constraint.mute = True
         moved = []
-        for position in ((0, 1.2, .7), (0, 1.1, -.5), (0, 1.8, .3)):
-            target.location = position
-            for joint in limits:
-                angle = self.angle(joint.bone, 0)
-                contract_angle = angle * joint.axis[0]
-                moved.append(abs(angle))
-                self.assertGreaterEqual(contract_angle, joint.lower-3e-4)
-                self.assertLessEqual(contract_angle, joint.upper+3e-4)
-            self.assertEqual(ik.target, target)
+        for muted in (False, True):
+            for pb in self.obj.pose.bones:
+                for constraint in pb.constraints:
+                    if constraint.type == "LIMIT_ROTATION": constraint.mute = muted
+            for position in ((0, 1.2, .7), (0, 1.1, -.5), (0, 1.8, .3)):
+                target.location = position
+                for joint in limits:
+                    angle = self.angle(joint.bone, 0)
+                    contract_angle = angle * joint.axis[0]
+                    moved.append(abs(angle))
+                    self.assertGreaterEqual(contract_angle, joint.lower-3e-4)
+                    self.assertLessEqual(contract_angle, joint.upper+3e-4)
+                self.assertEqual(ik.target, target)
         self.assertGreater(max(moved), .01, "IK действительно изменила evaluated pose")
 
     def test_foreign_constraints_active_limits_and_stale_plan_refuse_before_write(self):
@@ -188,6 +189,32 @@ class NativeJointLimitsTests(unittest.TestCase):
                         api.remove_joint_limits(self.obj, owner_id=self.owner)
                 self.assertEqual(self.snapshot(), before)
                 api.remove_joint_limits(self.obj, owner_id=self.owner)
+
+    def test_partial_native_remove_failure_restores_actual_deleted_constraints(self):
+        """Rollback проверяется после одного настоящего удаления, не только writer IK."""
+        self.apply(ik=["Upper", "Lower"])
+        def semantic():
+            value = self.snapshot()
+            value["native"] = [(bone, fields, [(name, kind, settings) for _, name, kind, settings in constraints])
+                               for bone, fields, constraints in value["native"]]
+            return value
+        before = semantic()
+        original = api._remove_owned_constraint
+        for after_delete in (False, True):
+            calls = 0
+            def fail(pb, constraint):
+                nonlocal calls
+                calls += 1
+                if after_delete:
+                    original(pb, constraint)
+                    raise RuntimeError("after real delete")
+                if calls == 2: raise RuntimeError("after previous delete")
+                original(pb, constraint)
+            with patch.object(api, "_remove_owned_constraint", side_effect=fail):
+                with self.assertRaisesRegex(RuntimeError, "delete"):
+                    api.remove_joint_limits(self.obj, owner_id=self.owner)
+            self.assertEqual(semantic(), before)
+            self.assertEqual(api.inspect_joint_limits(self.obj, owner_id=self.owner)["status"], "valid")
 
     def test_owned_record_not_name_guards_authored_edits_and_different_sets(self):
         self.apply(ik=["Upper"])

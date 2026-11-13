@@ -9,7 +9,7 @@ verified version; historical checks used 5.2.0 LTS. Blender's bundled Python can
 
 ## Install on another account or computer
 
-Extract `game_asset_tools_codex_0.5.2.zip` and run inside its `game-asset-tools` folder:
+Extract `game_asset_tools_codex_0.5.3.zip` and run inside its `game-asset-tools` folder:
 
 ```powershell
 python install_codex_plugin.py

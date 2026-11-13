@@ -1,4 +1,4 @@
-# GameAssetTools 0.5.2
+# GameAssetTools 0.5.3
 
 [![Python tests](https://github.com/Z1rkTi3/GameAssetTools/actions/workflows/tests.yml/badge.svg)](https://github.com/Z1rkTi3/GameAssetTools/actions/workflows/tests.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -96,7 +96,7 @@ paid generator, or external service is required. Do not install host `bpy`.
 
 ### Blender Add-on installation
 
-1. Run `python scripts/package_addon.py` to build **`game_asset_tools_blender_0.5.2.zip`**
+1. Run `python scripts/package_addon.py` to build **`game_asset_tools_blender_0.5.3.zip`**
    in `output/`. The local package includes the shared Core and English/Russian sidebar;
    building it does not publish a GitHub release.
 2. In Blender, open **Edit → Preferences → Add-ons → Install from Disk**, select
@@ -210,7 +210,7 @@ python -m unittest discover -s tests -p "test_*.py"
 python scripts/package_addon.py
 ```
 
-The ZIP builder produces `output/game_asset_tools_blender_0.5.2.zip`, checks version
+The ZIP builder produces `output/game_asset_tools_blender_0.5.3.zip`, checks version
 consistency, and includes the MIT license. `--overwrite` explicitly replaces an
 existing build. [CI](.github/workflows/tests.yml) runs Python-only tests, imports,
 compilation and packaging without Blender. The full Blender and installation
