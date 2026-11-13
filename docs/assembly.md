@@ -459,3 +459,63 @@ Suite содержит обычную и повторную замену, dry ru
 с текущими walker-файлами. Источник pilot также не объявляет точные
 mechanical joint limits; они не выдумываются ради pass. Используются авторские
 GAT material roles, без заявления о готовности игрового cel-атласа.
+
+## Явные native ограничения суставов
+
+`game_asset_tools.assembly.joint_limits` предоставляет opt-in Blender API.
+Чтение `RigContract`, старые `joints: []`, Library и обычный Export не включают
+enforcement автоматически. Сам формат JointLimit не изменён. Вызывающий адаптер
+передаёт настоящий локальный Armature Object и ограничения уже в локальных осях
+целевых костей; соответствие экспортной кости контролу и преобразование rest-frame
+остаются ответственностью проекта. Поиск костей по похожему имени не выполняется.
+
+```python
+from game_asset_tools.assembly.contracts import JointLimit
+from game_asset_tools.assembly.joint_limits import (
+    plan_joint_limits, apply_joint_limits, inspect_joint_limits, remove_joint_limits,
+)
+
+plan = plan_joint_limits(armature, [JointLimit("Hinge", (1, 0, 0), -0.3, 0.6)],
+                         owner_id="authoring_example", ik_bones=("Hinge",))
+apply_joint_limits(plan)
+report = inspect_joint_limits(armature, owner_id="authoring_example")
+remove_joint_limits(armature, owner_id="authoring_example")
+```
+
+Числа в примере иллюстрируют API и не являются утверждёнными физическими пределами
+игрового меха. Пустой профиль не накладывает ограничения: для снятия нужен явный
+Remove. Native adapter принимает только signed cardinal axes и диапазон внутри
+`[-π, π]`; неподдержанные варианты отклоняются без clamp. При отрицательной оси
+native диапазон равен `[-upper, -lower]`, а исходный профиль сохраняет свою ось.
+
+Все перечисленные суставы получают `LIMIT_ROTATION` в LOCAL space с явным Euler
+order, `use_transform_limit=True` и нулевыми пределами поперечных осей. Только
+явный `ik_bones` subset получает native IK min/max/use-limit и ортогональные
+`lock_ik_*`: обычный Limit Rotation не ограничивает IK solver. Существующие IK
+и COPY_ROTATION constraints сохраняются. Чужой LIMIT_ROTATION, уже активные
+авторские IK limits/lock выбранной оси и анимированные IK fields вызывают отказ.
+Location, scale, rest, rotation mode, Actions и FCurves инструмент не изменяет.
+
+Один owner record `gat_joint_limits_v1` хранится на Armature Object, а не на
+shared Armature Data. Он содержит профиль, прежние IK fields и фактический RNA
+readback последнего Apply. Имя constraint само по себе не доказывает ownership.
+План проверяется целиком до записи и отклоняется при изменении исходного состояния.
+Повторный идентичный Apply идемпотентен; Update разрешён для того же bone set и
+IK subset. Для другого набора нужен отдельный Remove/Apply. Изменённые managed
+fields, порядок constraints, новые drivers/keys или custom properties на managed
+constraint блокируют Update/Remove: пользовательские правки не принимаются молча.
+
+Поздний отказ Apply возвращает исходные native fields и owner record, удаляя
+только constraints этой попытки. Remove возвращает исходные IK fields и удаляет
+только pristine managed constraints. При редком отказе непосредственно удаления
+уже удалённые собственные constraints могут быть восстановлены с новыми RNA
+адресами, сохраняя имена/параметры/порядок; пользовательские Actions не меняются.
+Linked data и Edit Mode отклоняются. Никакой регенерации Armature не происходит.
+
+Проверки математики без Blender: `python -m unittest discover -s tests -p test_joint_limits.py`.
+Native fixture: `blender --background --factory-startup --python-exit-code 1 --python tests/blender_joint_limits_test.py`.
+Она проверяет обе границы шести signed axes, настоящий IK, сохранность rest/Actions,
+Save/Open, идемпотентность, stale plan, чужие настройки и rollback. Наличие fixture
+не означает успешный запуск; фактические результаты относятся к конкретным
+версиям Blender и SHA исходников. Ни этот инструмент, ни clip envelopes не
+подтверждают геометрические зазоры, ход поршней, коллизии или прочность.
