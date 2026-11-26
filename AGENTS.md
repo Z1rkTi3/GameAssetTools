@@ -1,5 +1,9 @@
 # GameAssetTools
 
+Development is ON HOLD as of 2026-11-27. Preserve existing recipes, tools,
+releases and work in progress. Wait for a separate task before extending
+procedural models or investigating alternative production methods.
+
 One shared Python Core powers the headless CLI and Blender add-on. Asset-specific
 recipes live in `game_assets/<category>/<asset>/`; adjustable values belong in
 their `config.json`. Project defaults live in `game_style.json`.

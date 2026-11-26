@@ -34,6 +34,10 @@ The ZIP includes Core and recipes, including Rubin Tower, and can be installed
 under another account/profile without copying credentials. See
 [plugin installation and usage](codex/plugins/game-asset-tools/README.md).
 
+**Development is temporarily on hold as of 2026-11-27.** Mech Battler 2 is
+prioritizing playable systems while the current procedural asset workflow is
+paused. Existing releases and saved assets remain available.
+
 ## Implemented
 
 - A parameterized industrial walker recipe with mirrored legs, geometric checks,
